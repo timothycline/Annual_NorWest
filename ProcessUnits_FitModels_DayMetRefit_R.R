@@ -10,6 +10,7 @@
 # some automatic parallel processing of the time-consuming matrix inversions.
 # Microsoft OpenR is a pre-compiled version of this, though sometimes wonky. 
 
+
 # Load the SSN library of functions
 library(here)
 library(SSN)
@@ -80,6 +81,8 @@ GetDayMet <- function(Lat,Lon,ID_1KM){
   return(df1)
 }
 
+
+
 Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeBear.ssn','Spokoot.ssn','UpMissMarias.ssn','UpYellBighorn.ssn')
 #for(u in 1:c(1,2,3,5,6,7,8)){
   u<-1
@@ -135,21 +138,9 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   
   }
   proj4string<-proj4string(UnitIn)
+  
+  UnitIn<-readRDS(paste0(data_dir,paste0(UnitName,'.DayMetSSN.RDS')))
   #UnitIn@obspoints@SSNPoints[[1]]
-  
-  #Load DayMet predictions for all observation locations
-  DayMet_Obs<-readRDS(here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS')))
-  DayMet_Obs_AugTemp <- DayMet_Obs %>% filter(month=='08') %>% 
-    select(ID_1KM,year,yday,month,tmax..deg.c.,tmin..deg.c.) %>%
-    mutate(tmean..deg.c = tmin..deg.c. + (tmax..deg.c.-tmin..deg.c.)/2) %>%
-    group_by(year,ID_1KM) %>% 
-    summarise(AugMeanTemp = mean(tmean..deg.c)) %>% 
-    rename(SAMPLEYEAR = year)
-  
-  #Refit the models
-  ####
-  ####
-  ####
   
   #Get dataframe
   unit_df <- getSSNdata.frame(UnitIn)
@@ -205,111 +196,117 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   #ssn1<-glmssn(STREAM_AUG ~ airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("Exponential.tailup"), addfunccol = "afvArea")
   
   if(GlacierBool & !(TailwaterBool)){ #If glaciers but not tailwaters
-    unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    unit.tu.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    
+    # unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.tu.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # 
+    unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, 
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   }else if(!GlacierBool & (TailwaterBool)){ #If tailwaters but not glaciers
-    unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
-    unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
-    unit.tu.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
-    unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
-    
+    # unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
+    # unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
+    # unit.tu.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
+    # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
+    # 
     unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, 
-                            UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   
   }else if(GlacierBool & TailwaterBool){ #If tailwaters and glaciers
-    unit.tu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")
-    unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    unit.tu.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup",'Exponential.taildown',"Exponential.Euclid"), addfunccol = "afvArea")
-    unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    
+    # unit.tu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")
+    # unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.tu.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup",'Exponential.taildown',"Exponential.Euclid"), addfunccol = "afvArea")
+    # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # 
+    unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + TAILWATER + drainage + lat + water + bfi + airtemp + flow, 
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   }else{ #If no tailwaters and no glaciers
-    unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    unit.tu.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
-    unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.tu.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
+    unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, 
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   }
   
-  AICcomp <- c(tryCatch({AIC(unit.tu)},error=function(e){return(NA)}),
-               tryCatch({AIC(unit.td)},error=function(e){return(NA)}),
-                 tryCatch({AIC(unit.tu.eu)},error=function(e){return(NA)}),
-                   tryCatch({AIC(unit.td.eu)},error=function(e){return(NA)}))
+  # AICcomp <- c(tryCatch({AIC(unit.tu)},error=function(e){return(NA)}),
+  #              tryCatch({AIC(unit.td)},error=function(e){return(NA)}),
+  #                tryCatch({AIC(unit.tu.eu)},error=function(e){return(NA)}),
+  #                  tryCatch({AIC(unit.td.eu)},error=function(e){return(NA)}))
   
-  BestMod<-switch(which.min(AICcomp),unit.tu,unit.td,unit.tu.eu,unit.td.eu)
-  BestMod <- update(BestMod[[1]],EstMeth='ML')
+  BestMod<-unit.tu.td.eu#switch(which.min(AICcomp),unit.tu,unit.td,unit.tu.eu,unit.td.eu)
+  #BestMod <- update(BestMod[[1]],EstMeth='ML')
   
-  saveRDS(BestMod,here('Regions',paste0('BestModel_',UnitName,'.RDS')))
-  save(list=ls(),file=here('Regions',paste0('Workspace_',UnitName,'.Rdata')))
+  saveRDS(BestMod,paste(data_dir,'Regions/',paste0('BestModel_',UnitName,'.RDS')))
+  save(list=ls(),file=paste(data_dir,'Regions/',paste0('Workspace_',UnitName,'.Rdata')))
   
   BestMod_r <- residuals(BestMod, cross.validation=T)
   BestMod_rdf <- getSSNdata.frame(BestMod_r)
   
   # Torgegram of fitted model residuals
   BestMod_t <- Torgegram(BestMod_r,"_resid.crossv_",nlag=20)
-  jpeg(paste0('Regions/BestMod_',substr(Units[u],1,nchar(Units[u])-4),"_residtorg.jpg"))
+  jpeg(paste0(data_dir,'Regions/BestMod_',substr(Units[u],1,nchar(Units[u])-4),"_residtorg.jpg"))
     plot(BestMod_t, main= "BestModel Residuals Torgegram") 
   dev.off()
-  
-  #Root mean squared error (RMSE) of cross-validated predictions
-  sqrt(mean((BestMod_rdf[,"_CrossValPred_"]-BestMod_rdf$obsval)^2))
-  #RMSE of fixed effects only
-  sqrt(mean((BestMod_rdf[,"_fit_"]-BestMod_rdf$obsval)^2))
-  # 1.935
-  # Null RMSE
-  sqrt(mean((BestMod_rdf$obsval-mean(BestMod_rdf$obsval))^2))
-  # 2.996
-  
-  #Pseudo-r2 of cross-validated predictions. 
-  cor(BestMod_rdf$obsval,BestMod_rdf[,"_CrossValPred_"])^2
-  
-  #Read in all PredPoint DayMet temperatures
-  DayMet_Preds_AugTemp <- lapply(list.files(here('Regions','DayMet',UnitName,'PredsBy1000')), FUN=function(x){
-    #x<-list.files(here('Regions','DayMet',UnitName,'PredsBy1000'))[1]
-    t1<-readRDS(here('Regions','DayMet',UnitName,'PredsBy1000',x))
-    t1 <- t1 %>% filter(month=='08') %>% 
-      select(ID_1KM,year,yday,month,tmax..deg.c.,tmin..deg.c.) %>%
-      mutate(tmean..deg.c = tmin..deg.c. + (tmax..deg.c.-tmin..deg.c.)/2) %>%
-      group_by(year,ID_1KM) %>% 
-      summarise(AugMeanTemp = mean(tmean..deg.c)) %>% 
-      rename(SAMPLEYEAR = year)
-    return(t1)
-  }) %>% bind_rows()
-  
-  nrow(DayMet_Preds_AugTemp)
-  
-  Preds_AllYears <- lapply(1980:2020,FUN=function(yy){#foreach(yy = 1980:2020, .packages=c('dplyr','tidyr','SSN')) %do% {
-    #Replace air temp with DayMet for this prediction year
-    UnitIn_preddf <- getSSNdata.frame(UnitIn, "preds")
-    DayMetThisYear <- DayMet_Preds_AugTemp %>% filter(SAMPLEYEAR == yy)
-    OriginalAirData <- UnitIn_preddf %>% select(ID_1KM,SAMPLEYEAR,Air_Aug)
-    OriginalAirData$SAMPLEYEAR <- yy
-    CombiAirTemp <- OriginalAirData %>% left_join(DayMetThisYear,by=c('ID_1KM','SAMPLEYEAR'))
-    
-    UnitIn_preddf$Air_Aug <- CombiAirTemp$AugMeanTemp
-    UnitIn_preddf$GLACIER <- as.numeric(UnitIn_preddf$GLACIER!=-9999)
-    
-    #Standarized variables and create a new SSN for model predictions
-    contpred <- UnitIn_preddf %>% select(ELEV,CANOPY,SLOPE,PRECIP,CUMDRAINAG,Y_COORD,NLCD11PC,BFI,Air_Aug,Flow_Aug)
-    contpred.s <- stdpreds(contpred,continuous)
-    colnames(contpred.s) <- c("elev","canopy","slope","precip","drainage","lat","water","bfi","airtemp","flow")
-    UnitIn_preddf.s <- data.frame(UnitIn_preddf,contpred.s)
-    UnitIn_preddf.s$yearf <- factor(UnitIn_preddf.s$SAMPLEYEAR)
-    UnitIn_Pred<- putSSNdata.frame(UnitIn_preddf.s,UnitIn,"preds")
-    
-    
-    PredMod <- BestMod
-    PredMod$ssn.object@predpoints <- UnitIn_Pred@predpoints
-    p1 <- predict(PredMod,'preds')
-    pred1<-getSSNdata.frame(p1,'preds') %>% select("OBSPREDID",'STREAM_AUG','STREAM_AUG.predSE')
-    allpreds <- pred1
-    colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
-    
-    write.csv(x=allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".csv")),row.names=F)
-    write.dbf(allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".dbf")))
-  })
-  
+
+  # #Root mean squared error (RMSE) of cross-validated predictions
+  # sqrt(mean((BestMod_rdf[,"_CrossValPred_"]-BestMod_rdf$obsval)^2))
+  # #RMSE of fixed effects only
+  # sqrt(mean((BestMod_rdf[,"_fit_"]-BestMod_rdf$obsval)^2))
+  # # 1.935
+  # # Null RMSE
+  # sqrt(mean((BestMod_rdf$obsval-mean(BestMod_rdf$obsval))^2))
+  # # 2.996
+  # 
+  # #Pseudo-r2 of cross-validated predictions. 
+  # cor(BestMod_rdf$obsval,BestMod_rdf[,"_CrossValPred_"])^2
+  # 
+  # #Read in all PredPoint DayMet temperatures
+  # DayMet_Preds_AugTemp <- lapply(list.files(here('Regions','DayMet',UnitName,'PredsBy1000')), FUN=function(x){
+  #   #x<-list.files(here('Regions','DayMet',UnitName,'PredsBy1000'))[1]
+  #   t1<-readRDS(here('Regions','DayMet',UnitName,'PredsBy1000',x))
+  #   t1 <- t1 %>% filter(month=='08') %>% 
+  #     select(ID_1KM,year,yday,month,tmax..deg.c.,tmin..deg.c.) %>%
+  #     mutate(tmean..deg.c = tmin..deg.c. + (tmax..deg.c.-tmin..deg.c.)/2) %>%
+  #     group_by(year,ID_1KM) %>% 
+  #     summarise(AugMeanTemp = mean(tmean..deg.c)) %>% 
+  #     rename(SAMPLEYEAR = year)
+  #   return(t1)
+  # }) %>% bind_rows()
+  # 
+  # nrow(DayMet_Preds_AugTemp)
+  # 
+  # Preds_AllYears <- lapply(1980:2020,FUN=function(yy){#foreach(yy = 1980:2020, .packages=c('dplyr','tidyr','SSN')) %do% {
+  #   #Replace air temp with DayMet for this prediction year
+  #   UnitIn_preddf <- getSSNdata.frame(UnitIn, "preds")
+  #   DayMetThisYear <- DayMet_Preds_AugTemp %>% filter(SAMPLEYEAR == yy)
+  #   OriginalAirData <- UnitIn_preddf %>% select(ID_1KM,SAMPLEYEAR,Air_Aug)
+  #   OriginalAirData$SAMPLEYEAR <- yy
+  #   CombiAirTemp <- OriginalAirData %>% left_join(DayMetThisYear,by=c('ID_1KM','SAMPLEYEAR'))
+  #   
+  #   UnitIn_preddf$Air_Aug <- CombiAirTemp$AugMeanTemp
+  #   UnitIn_preddf$GLACIER <- as.numeric(UnitIn_preddf$GLACIER!=-9999)
+  #   
+  #   #Standarized variables and create a new SSN for model predictions
+  #   contpred <- UnitIn_preddf %>% select(ELEV,CANOPY,SLOPE,PRECIP,CUMDRAINAG,Y_COORD,NLCD11PC,BFI,Air_Aug,Flow_Aug)
+  #   contpred.s <- stdpreds(contpred,continuous)
+  #   colnames(contpred.s) <- c("elev","canopy","slope","precip","drainage","lat","water","bfi","airtemp","flow")
+  #   UnitIn_preddf.s <- data.frame(UnitIn_preddf,contpred.s)
+  #   UnitIn_preddf.s$yearf <- factor(UnitIn_preddf.s$SAMPLEYEAR)
+  #   UnitIn_Pred<- putSSNdata.frame(UnitIn_preddf.s,UnitIn,"preds")
+  #   
+  #   
+  #   PredMod <- BestMod
+  #   PredMod$ssn.object@predpoints <- UnitIn_Pred@predpoints
+  #   p1 <- predict(PredMod,'preds')
+  #   pred1<-getSSNdata.frame(p1,'preds') %>% select("OBSPREDID",'STREAM_AUG','STREAM_AUG.predSE')
+  #   allpreds <- pred1
+  #   colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
+  #   
+  #   write.csv(x=allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".csv")),row.names=F)
+  #   write.dbf(allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".dbf")))
+  # })
+  # 
 #}
   
   # lf<-list.files(here('AnnualPredictions',UnitName),pattern='.csv')
