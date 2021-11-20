@@ -3,15 +3,15 @@
 # testing some scripts
 
 #SBATCH --job-name=tcline_test
-#SBATCH -n 4
-#SBATCH -N 2
+#SBATCH -n 1
+#SBATCH -N 1
 #SBATCH -p normal
 #SBATCH --account=norock
-#SBATCH --time=02:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tcline@usgs.gov
-#SBATCH -o test.out
+#SBATCH -o SpokootDayMet.out
 
-module load gnu8/8.3.0 R/4.0.1
+module load gnu8/8.3.0 R/1.1.1 gdal/3.1.0 proj/7.0.1
 
-prun Rscript script.R
+prun Rscript ProcessUnits_FitModels_DayMetRefit_R.R

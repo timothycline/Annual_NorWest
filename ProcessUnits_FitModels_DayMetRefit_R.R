@@ -18,6 +18,9 @@ library(foreign)
 library(dplyr)
 library(tidyr)
 library(doParallel)
+library(lme4)
+
+data_dir <- '~/Annual_NorWest_Data/'
 
 # Function to standardize variables
 stand <- function(x) { (x-mean(x))/(2*sd(x))}
@@ -45,94 +48,57 @@ ests <- function(x) {
 
 # Set the working directory to the parent folder of the SSN.
 
-# Load the ssn and all sets of prediction points
-# Points were divided into three groups to prevent memory errors in ArcGIS.
-# This wasnâ€™t necessary for later production units.
-AugDayMet <- function(Lat,Lon,ID_1KM){
-  # Lat <- LatLonsObs$Lat[x]
-  # Lon <- LatLonsObs$Lon[x]
-  # locID <- LatLonsObs$locID[x]
-  
-  df1 <- download_daymet(site = 'DayMet', lat=Lat, lon=Lon, start=1980, end=2020, internal=T, simplify = T) %>%
-    filter(measurement %in% c('tmin..deg.c.','tmax..deg.c.')) %>%
-    mutate(date=as.Date(paste(year,yday,sep='-'), '%Y-%j')) %>%
-    mutate(month=format(date,'%m')) %>% 
-    select(year,yday,month,measurement,value) %>% 
-    pivot_wider(names_from=measurement, values_from=value) %>% 
-    mutate('tmean..deg.c.'= tmin..deg.c. + (tmax..deg.c.-tmin..deg.c.)/2)
-  
-  AugTemp <- df1 %>% filter(month == '08') %>% group_by(year) %>% summarize(MeanAug=mean(tmean..deg.c.),MeanMaxAug=mean(tmax..deg.c.))
-  AugTemp$ID_1KM <-  ID_1KM
-    
-  return(AugTemp)
-}
-
-GetDayMet <- function(Lat,Lon,ID_1KM){
-  
-  #Download All Daymet measurements for this site
-  df1 <- download_daymet(site = 'DayMet', lat=Lat, lon=Lon, start=1980, end=2020, internal=T, simplify = T) %>%
-    mutate(date=as.Date(paste(year,yday,sep='-'), '%Y-%j')) %>%
-    mutate(month=format(date,'%m')) %>% 
-    select(year,yday,month,measurement,value) %>% 
-    pivot_wider(names_from=measurement, values_from=value)
-  
-  #Add id column to link to DayMet
-  df1$ID_1KM <- ID_1KM
-  return(df1)
-}
-
-
 
 Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeBear.ssn','Spokoot.ssn','UpMissMarias.ssn','UpYellBighorn.ssn')
 #for(u in 1:c(1,2,3,5,6,7,8)){
-  u<-1
+  u<-6
   
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
 
   if(Units[u]=='Midsnake.ssn'){
-    UnitIn <- importSSN(paste0('Regions/',Units[u]),predpts='pred_ne')
+    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='pred_ne')
     UnitIn <- importPredpts(UnitIn,'pred_se','ssn')
     UnitIn <- importPredpts(UnitIn,'pred_we','ssn')
     
-    if(!file.exists(here(paste0('Regions/',Units[u],'/distance')))){
+    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
       createDistMat(UnitIn,o.write=T,predpts="pred_ne",amongpreds=T)
       createDistMat(UnitIn,o.write=T,predpts="pred_se",amongpreds=T) 
       createDistMat(UnitIn,o.write=T,predpts="pred_we",amongpreds=T)
     }
     
   }else if(Units[u]=='Salmon.ssn'){
-    UnitIn <- importSSN(paste0('Regions/',Units[u]),predpts='preds-1')
+    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='preds-1')
     UnitIn <- importPredpts(UnitIn,'pred-2','ssn')
     
-    if(!file.exists(here(paste0('Regions/',Units[u],'/distance')))){
+    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
       createDistMat(UnitIn,o.write=T,predpts="preds-1",amongpreds=T)
       createDistMat(UnitIn,o.write=T,predpts="preds-2",amongpreds=T) 
     }
     
   }else if(Units[u]=='SnakeBear.ssn'){
-    UnitIn <- importSSN(paste0('Regions/',Units[u]),predpts='prednorth')
+    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='prednorth')
     UnitIn <- importPredpts(UnitIn,'predsouth','ssn')
     
-    if(!file.exists(here(paste0('Regions/',Units[u],'/distance')))){
+    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
       createDistMat(UnitIn,o.write=T,predpts="prednorth",amongpreds=T)
       createDistMat(UnitIn,o.write=T,predpts="predsouth",amongpreds=T) 
     }
     
   }else if(Units[u]=='Spokoot.ssn'){
-    UnitIn <- importSSN(paste0('Regions/',Units[u]),predpts='prednorth')
+    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='prednorth')
     UnitIn <- importPredpts(UnitIn,'predse','ssn')
     UnitIn <- importPredpts(UnitIn,'predsw','ssn')
     
-    if(!file.exists(here(paste0('Regions/',Units[u],'/distance')))){
+    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
       createDistMat(UnitIn,o.write=T,predpts="prednorth",amongpreds=T)
       createDistMat(UnitIn,o.write=T,predpts="predse",amongpreds=T) 
       createDistMat(UnitIn,o.write=T,predpts="predsw",amongpreds=T) 
     }
     
   }else{
-    UnitIn <- importSSN(paste0('Regions/',Units[u]),predpts='preds')
+    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='preds')
     
-    if(!file.exists(here(paste0('Regions/',Units[u],'/distance')))){
+    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
       createDistMat(UnitIn,o.write=T,predpts="preds",amongpreds=T)
     }
   
@@ -145,15 +111,9 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   #Get dataframe
   unit_df <- getSSNdata.frame(UnitIn)
   
-  #Replace original air temp data with new daymet measurements
-  OriginalAirData <- unit_df %>% select(ID_1KM,SAMPLEYEAR,Air_Aug)
-  CombiAirTemp <- OriginalAirData %>% left_join(DayMet_Obs_AugTemp,by=c('ID_1KM','SAMPLEYEAR'))
-  unit_df$Air_Aug <- CombiAirTemp$AugMeanTemp
-  
   if('GLACIER' %in% colnames(unit_df)){
     unit_df$GLACIER[unit_df$GLACIER==-9999] <- 0
   }
-  
   
   #Standardize covariates
   continuous <- unit_df %>% select(ELEV,CANOPY,SLOPE,PRECIP,CUMDRAINAG,Y_COORD,NLCD11PC,BFI,Air_Aug,Flow_Aug)
@@ -170,16 +130,15 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   
   unit_df.s$locID2 <- as.factor(unit_df.s$ID_1KM)
   
-  library(lme4)
   # A-spatial models with
   if(GlacierBool & !(TailwaterBool)){
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
   }else if(!GlacierBool & (TailwaterBool)){
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
   }else if(GlacierBool & TailwaterBool){
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
   }else{
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi  + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi  + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
   }
   
   summary(unit.aspatial)
@@ -249,379 +208,379 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
     plot(BestMod_t, main= "BestModel Residuals Torgegram") 
   dev.off()
 
-  # #Root mean squared error (RMSE) of cross-validated predictions
-  # sqrt(mean((BestMod_rdf[,"_CrossValPred_"]-BestMod_rdf$obsval)^2))
-  # #RMSE of fixed effects only
-  # sqrt(mean((BestMod_rdf[,"_fit_"]-BestMod_rdf$obsval)^2))
-  # # 1.935
-  # # Null RMSE
-  # sqrt(mean((BestMod_rdf$obsval-mean(BestMod_rdf$obsval))^2))
-  # # 2.996
-  # 
-  # #Pseudo-r2 of cross-validated predictions. 
-  # cor(BestMod_rdf$obsval,BestMod_rdf[,"_CrossValPred_"])^2
-  # 
-  # #Read in all PredPoint DayMet temperatures
-  # DayMet_Preds_AugTemp <- lapply(list.files(here('Regions','DayMet',UnitName,'PredsBy1000')), FUN=function(x){
-  #   #x<-list.files(here('Regions','DayMet',UnitName,'PredsBy1000'))[1]
-  #   t1<-readRDS(here('Regions','DayMet',UnitName,'PredsBy1000',x))
-  #   t1 <- t1 %>% filter(month=='08') %>% 
-  #     select(ID_1KM,year,yday,month,tmax..deg.c.,tmin..deg.c.) %>%
-  #     mutate(tmean..deg.c = tmin..deg.c. + (tmax..deg.c.-tmin..deg.c.)/2) %>%
-  #     group_by(year,ID_1KM) %>% 
-  #     summarise(AugMeanTemp = mean(tmean..deg.c)) %>% 
-  #     rename(SAMPLEYEAR = year)
-  #   return(t1)
-  # }) %>% bind_rows()
-  # 
-  # nrow(DayMet_Preds_AugTemp)
-  # 
-  # Preds_AllYears <- lapply(1980:2020,FUN=function(yy){#foreach(yy = 1980:2020, .packages=c('dplyr','tidyr','SSN')) %do% {
-  #   #Replace air temp with DayMet for this prediction year
-  #   UnitIn_preddf <- getSSNdata.frame(UnitIn, "preds")
-  #   DayMetThisYear <- DayMet_Preds_AugTemp %>% filter(SAMPLEYEAR == yy)
-  #   OriginalAirData <- UnitIn_preddf %>% select(ID_1KM,SAMPLEYEAR,Air_Aug)
-  #   OriginalAirData$SAMPLEYEAR <- yy
-  #   CombiAirTemp <- OriginalAirData %>% left_join(DayMetThisYear,by=c('ID_1KM','SAMPLEYEAR'))
-  #   
-  #   UnitIn_preddf$Air_Aug <- CombiAirTemp$AugMeanTemp
-  #   UnitIn_preddf$GLACIER <- as.numeric(UnitIn_preddf$GLACIER!=-9999)
-  #   
-  #   #Standarized variables and create a new SSN for model predictions
-  #   contpred <- UnitIn_preddf %>% select(ELEV,CANOPY,SLOPE,PRECIP,CUMDRAINAG,Y_COORD,NLCD11PC,BFI,Air_Aug,Flow_Aug)
-  #   contpred.s <- stdpreds(contpred,continuous)
-  #   colnames(contpred.s) <- c("elev","canopy","slope","precip","drainage","lat","water","bfi","airtemp","flow")
-  #   UnitIn_preddf.s <- data.frame(UnitIn_preddf,contpred.s)
-  #   UnitIn_preddf.s$yearf <- factor(UnitIn_preddf.s$SAMPLEYEAR)
-  #   UnitIn_Pred<- putSSNdata.frame(UnitIn_preddf.s,UnitIn,"preds")
-  #   
-  #   
-  #   PredMod <- BestMod
-  #   PredMod$ssn.object@predpoints <- UnitIn_Pred@predpoints
-  #   p1 <- predict(PredMod,'preds')
-  #   pred1<-getSSNdata.frame(p1,'preds') %>% select("OBSPREDID",'STREAM_AUG','STREAM_AUG.predSE')
-  #   allpreds <- pred1
-  #   colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
-  #   
-  #   write.csv(x=allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".csv")),row.names=F)
-  #   write.dbf(allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".dbf")))
-  # })
-  # 
-#}
-  
-  # lf<-list.files(here('AnnualPredictions',UnitName),pattern='.csv')
-  # AllTemps<-lapply(1:length(lf),FUN=function(x){
-  #   #x<-1
-  #   t1<-read.csv(here('AnnualPredictions',UnitName,lf[x])) %>% mutate(SAMPLEYEAR = 1979+x)
-  #   return(t1)
-  # }) %>% bind_rows()
-  # head(AllTemps)
-  # xt1<-xtabs(predtemp ~ OBSPREDID + SAMPLEYEAR,AllTemps)
-  # plot(xt1[1,],type='l')
-  # for(ff in 1:100){
-  #   points(xt1[ff,],type='l',col='#00000055')
-  # }
-  
-    # 
-    # 
-    # ?splitPredictions
-    # 
-    # UnitIn_Pred$ssn.object <- splitPredictions(UnitIn_Pred$ssn.object, "prednorth",chunksof=10000)
-    # UnitIn_Pred$ssn.object <- splitPredictions(UnitIn_Pred$ssn.object, "predse",chunksof=7000)
-    # UnitIn_Pred$ssn.object <- splitPredictions(UnitIn_Pred$ssn.object, "predsw",chunksof=7000)
-    # 
-    # # Make predictions
-    # spok1p1 <- predict(spok1,"prednorth-1")
-    # spok1p2 <- predict(spok1,"prednorth-2")
-    # spok1p3 <- predict(spok1,"prednorth-3")
-    # spok1p4 <- predict(spok1,"predse-1")
-    # spok1p5 <- predict(spok1,"predse-2")
-    # spok1p6 <- predict(spok1,"predsw-1")
-    # spok1p7 <- predict(spok1,"predsw-2")
-    # 
-    # # Extrac prediction data frames
-    # pred1df <- getSSNdata.frame(spok1p1,"prednorth-1")
-    # pred2df <- getSSNdata.frame(spok1p2,"prednorth-2")
-    # pred3df <- getSSNdata.frame(spok1p3,"prednorth-3")
-    # pred4df <- getSSNdata.frame(spok1p4,"predse-1")
-    # pred5df <- getSSNdata.frame(spok1p5,"predse-2")
-    # pred6df <- getSSNdata.frame(spok1p6,"predsw-1")
-    # pred7df <- getSSNdata.frame(spok1p7,"predsw-2")
-    # 
-    # # Reassemble the pieces into one batch.
-    # allpreds <- rbind(pred1df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred2df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred3df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred4df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred5df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred6df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred7df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")])
-    # colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
-    # 
-    # # Export prediction dataset as a csv (good for general use) and dbf (good for GIS)
-    # write.csv(allpreds,"spok1preds.csv",row.names=F)
-    # write.dbf(allpreds,"spok1preds.dbf")
-    # 
-    # # Compare predicted and observed at fitting sites, and export. 
-    # predobs <- data.frame(spok1rdf$OBSPREDID,spok1rdf[,"_CrossValPred_"],spok1rdf$obsval)
-    # colnames(predobs) <- c("obspredid","predicted","observed")
-    # write.csv(predobs,"predobs.csv",row.names=F)
-    # 
-    # 
-  }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-}
-
-
-
-msh <- importSSN("MissouriHW.ssn",predpts="preds")
-msh@data
-#msh1 <- importPredpts(msh,"predse","ssn")
-#msh <- importPredpts(msh,"predsw","ssn")
-
-# Create distance matrices
-createDistMat(msh,o.write=T,predpts="preds",amongpreds=T)
-#createDistMat(msh,o.write=T,predpts="predse",amongpreds=T) 
-#createDistMat(msh,o.write=T,predpts="predsw",amongpreds=T)
-
-
-# Create raw torgegram
-  msh_tg <- Torgegram(msh,"STREAM_AUG",nlag=20)
-  jpeg("msh_rawtorg.jpg")
-  plot(msh_tg, main = "Raw Data Torgegram") 
-dev.off()
-
-# Extract dataframe and fit basic aspatial model with un-standardized predictors
-mshdf <- getSSNdata.frame(msh)
-msh.lm <- lm(STREAM_AUG ~ ELEV + CANOPY + SLOPE + PRECIP + CUMDRAINAG + Y_COORD + NLCD11PC + GLACIER + BFI + TAILWATER + Air_Aug + Flow_Aug, data=mshdf)
-summary(msh.lm)
-
-# Standardize continuous covariates and add factor for year
-continuous <- mshdf[,c(11:21)]
-cont.s <- apply(continuous,2,stand)
-colnames(cont.s) <- c("elev","canopy","slope","precip","drainage","lat","water","glacier","bfi","airtemp","flow")
-mshdf.s <- data.frame(mshdf,cont.s)
-mshdf.s$yearf <- factor(mshdf.s$SAMPLEYEAR)
-mshs <- putSSNdata.frame(mshdf.s,msh,"Obs")
-
-# Version without glacier + standardized variables
-msh.lm2 <- lm(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, data=mshdf.s)
-
-# Extract pure aspatial parameter estimates, back-transform, and save both versions of estimates
-# Must be careful about the order of parameters! No attempt is made to match them by name.
-# This WILL need to be adjusted depending if glaciers are or are not used in the model.
-# Ditto for tailwater.
-
-mshAe <- summary(msh.lm2)$coefficients
-backtrans <- mshAe[-c(1,10),1:2]/(2*sapply(continuous[,-8],sd))
-esttable <- cbind(rbind(mshAe[1,1:2],backtrans[1:8,],mshAe[10,1:2],backtrans[9:10,]),mshAe)
-rownames(esttable) <- rownames(spokAe)
-write.csv(esttable,"aspatialestimates.csv")
-
-# Aspatial performance
-predictA <- predict(msh.lm2)
-sqrt(mean((predictA-mshdf.s$STREAM_AUG)^2))
-# 1.885
-
-# Examine correlations
-library(ellipse)
-cor(cont.s)
-jpeg("corrplot.jpg")
-plotcorr(cor(cont.s),type="lower")
-dev.off()
-
-# Get VIFs from linear model as an indicator of multicollinearity
-library(car)
-vif(msh.lm2)
-#      ELEV     CANOPY      SLOPE     PRECIP CUMDRAINAG    Y_COORD   NLCD11PC 
-#  2.399760   1.584861   1.351117   1.577125   1.909954   2.585873   1.305458 
-#   GLACIER        BFI  TAILWATER    Air_Aug   Flow_Aug 
-#  1.048601   1.255432   1.323322   1.048707   1.051820 
-
-# Standardize preds based on obs and add factor for year- prednorth
-mshpreddf <- getSSNdata.frame(msh, "preds")
-contpred <- mshpreddf[,c(11:21)]
-contpred.s <- stdpreds(contpred,continuous)
-colnames(contpred.s) <- c("elev","canopy","slope","precip","drainage","lat","water","glacier","bfi","airtemp","flow")
-mshpreddf.s <- data.frame(mshpreddf,contpred.s)
-mshpreddf.s$yearf <- factor(mshpreddf.s$SAMPLEYEAR)
-mshs <- putSSNdata.frame(mshpreddf.s,msh,"preds")
-
-
-###########
-# Model1  #
-###########
-
-# We run all models with the same predictor variables, whether significant or not, except:
-# Glacier and Tailwater are omitted as a covariates in units where they are absent 
-# In this unit we use tailwater but not glacier.
-
-# Note that the correlation model structure was developed after testing of the Salmon and
-# Clearwater production units. Once the model structure was finalized, we decided
-# to run all final models using EstMeth= â€œMLâ€.
-
-starttime <- Sys.time() # not necessary; just for timing longer runs
-
-unique(mshs@obspoints@SSNPoints[[1]]@point.data$locID)
-
-#msh1 <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.tailup","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
-
-#get errors for putting tailup and taildown in the same model
-msh.tu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","Exponential.tailup"), addfunccol = "afvArea")
-msh.td <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown"), addfunccol = "afvArea")
-msh.tu.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")
-#msh.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea") 
-
-#msh.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.tailup","Exponential.Euclid",'Exponential.taildown'), addfunccol = "afvArea")
-
-
-AIC(msh.tu)
-AIC(msh.td)
-AIC(msh.tu.eu)
-
-msh1 <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")
-
-elapsed <- Sys.time()-starttime # See above note
-elapsed
-
-# Extract predictions/ Leave-one-out cross validation predictions
-msh1r <- residuals(msh1, cross.validation=T)
-msh1rrdf <- getSSNdata.frame(msh1r)
-
-# Torgegram of fitted model residuals
-msh1t <- Torgegram(msh1r,"_resid.crossv_",nlag=20)
-jpeg("msh1residtorg.jpg")
-plot(msh1t, main= "Model1 Residuals Torgegram") 
-dev.off()
-
-#Root mean squared error (RMSE) of cross-validated predictions
-sqrt(mean((spok1rdf[,"_CrossValPred_"]-spok1rdf$obsval)^2))
-# 0.969
-
-#RMSE of fixed effects only
-sqrt(mean((spok1rdf[,"_fit_"]-spok1rdf$obsval)^2))
-# 1.935
-
-# Null RMSE
-sqrt(mean((spok1rdf$obsval-mean(spok1rdf$obsval))^2))
-# 2.996
-
-#Pseudo-r2 of cross-validated predictions. 
-cor(spok1rdf$obsval,spok1rdf[,"_CrossValPred_"])^2
-# 0.895
-
-# Get parameter estimates, back-transform, and save both versions of estimates
-# Must be careful about the order of parameters! No attempt is made to match them by name.
-# This WILL need to be adjusted depending if glaciers are or are not used in the model.
-# Ditto for tailwater.
-
-spok1e <- summary(spok1)$fixed.effects.estimates
-backtrans <- spok1e[-c(1,10),2:3]/(2*sapply(continuous[,c(1:7,9:11)],sd))
-esttable <- cbind(spok1e[,1],rbind(spok1e[1,2:3],backtrans[1:8,],spok1e[10,2:3],backtrans[9:10,]),spok1e[,2:5])
-write.csv(esttable,"spok1estimates.csv")
-
-# Outlier analysis
-resids <- spok1rdf[,"_resid.student_"]
-outlie <- spok1rdf[abs(resids)>5,c("pid","obsval","_CrossValPred_","_resid.student_")]
-# 18 records have abs studentized residuals >5; 5 records are >7; 1 record >10. 
-
-
-###############
-# Predictions #
-###############
-
-
-# Split prediction datasets into pieces for computers with lowish RAM. 
-# The "chunksof" setting depends on available memory on the computer.
-# 10-12K is about the limit on a machine with 16GB RAM.
-# Used chunks of 7000 for predse and predsw just to make the two batches even, but 10K would have been OK too.
-# Many datasets run without splitting on machines with 32GB RAM; 
-# I think all will run without splitting on machines with 64GB RAM.
-
-spok1$ssn.object <- splitPredictions(spok1$ssn.object, "prednorth",chunksof=10000)
-spok1$ssn.object <- splitPredictions(spok1$ssn.object, "predse",chunksof=7000)
-spok1$ssn.object <- splitPredictions(spok1$ssn.object, "predsw",chunksof=7000)
-
-# Make predictions
-spok1p1 <- predict(spok1,"prednorth-1")
-spok1p2 <- predict(spok1,"prednorth-2")
-spok1p3 <- predict(spok1,"prednorth-3")
-spok1p4 <- predict(spok1,"predse-1")
-spok1p5 <- predict(spok1,"predse-2")
-spok1p6 <- predict(spok1,"predsw-1")
-spok1p7 <- predict(spok1,"predsw-2")
-
-# Extrac prediction data frames
-pred1df <- getSSNdata.frame(spok1p1,"prednorth-1")
-pred2df <- getSSNdata.frame(spok1p2,"prednorth-2")
-pred3df <- getSSNdata.frame(spok1p3,"prednorth-3")
-pred4df <- getSSNdata.frame(spok1p4,"predse-1")
-pred5df <- getSSNdata.frame(spok1p5,"predse-2")
-pred6df <- getSSNdata.frame(spok1p6,"predsw-1")
-pred7df <- getSSNdata.frame(spok1p7,"predsw-2")
-
-# Reassemble the pieces into one batch.
-allpreds <- rbind(pred1df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred2df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred3df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred4df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred5df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred6df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred7df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")])
-colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
-
-# Export prediction dataset as a csv (good for general use) and dbf (good for GIS)
-write.csv(allpreds,"spok1preds.csv",row.names=F)
-write.dbf(allpreds,"spok1preds.dbf")
-
-# Compare predicted and observed at fitting sites, and export. 
-predobs <- data.frame(spok1rdf$OBSPREDID,spok1rdf[,"_CrossValPred_"],spok1rdf$obsval)
-colnames(predobs) <- c("obspredid","predicted","observed")
-write.csv(predobs,"predobs.csv",row.names=F)
-
-
-###########
-# Model2  #
-###########
-
-# â€œAspatialâ€ model. Same predictors as spatial model. Includes random effects for site and year. 
-
-starttime <- Sys.time()
-spok2 <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, spoks, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf"), addfunccol = "afvArea")
-elapsed <- Sys.time()-starttime
-elapsed
-
-# Extract predictions/ LOO CV predictions
-spok2r <- residuals(spok2,cross.validation=T)
-spok2rdf <- getSSNdata.frame(spok2r)
-
-# Create Torgegram of residuals
-spok2t <- Torgegram(spok2r,"_resid.crossv_",nlag=20)
-jpeg("spok2residtorg.jpg")
-plot(spok2t, main= "Model2 Residuals Torgegram") 
-dev.off()
-
-#RMSPE of cross-validated predictions
-sqrt(mean((spok2rdf[,"_CrossValPred_"]-spok2rdf$obsval)^2))
-# 1.176
-
-#RMSPE of fixed effects only
-sqrt(mean((spok2rdf[,"_fit_"]-spok2rdf$obsval)^2))
-# 1.890
-
-# Null RMSPE
-sqrt(mean((spok2rdf$obsval-mean(spok2rdf$obsval))^2))
-# 2.996
-
-#r2 of cross-validated predictions. 
-cor(spok2rdf$obsval,spok2rdf[,"_CrossValPred_"])^2
-# r2 = 0.846
-
-# Get parameter estimates, back-transform, and save both versions of estimates
-spok2e <- summary(spok2)$fixed.effects.estimates
-backtrans <- spok2e[-c(1,10),2:3]/(2*sapply(continuous[,c(1:7,9:11)],sd))
-esttable <- cbind(spok2e[,1],rbind(spok2e[1,2:3],backtrans[1:8,],spok2e[10,2:3],backtrans[9:10,]),spok2e[,2:5])
-write.csv(esttable,"spok2estimates.csv")
-
-# Save the full image including all modeling results. Optional.
-save.image(file = â€œspok.RData")
-
-
+#   # #Root mean squared error (RMSE) of cross-validated predictions
+#   # sqrt(mean((BestMod_rdf[,"_CrossValPred_"]-BestMod_rdf$obsval)^2))
+#   # #RMSE of fixed effects only
+#   # sqrt(mean((BestMod_rdf[,"_fit_"]-BestMod_rdf$obsval)^2))
+#   # # 1.935
+#   # # Null RMSE
+#   # sqrt(mean((BestMod_rdf$obsval-mean(BestMod_rdf$obsval))^2))
+#   # # 2.996
+#   # 
+#   # #Pseudo-r2 of cross-validated predictions. 
+#   # cor(BestMod_rdf$obsval,BestMod_rdf[,"_CrossValPred_"])^2
+#   # 
+#   # #Read in all PredPoint DayMet temperatures
+#   # DayMet_Preds_AugTemp <- lapply(list.files(here('Regions','DayMet',UnitName,'PredsBy1000')), FUN=function(x){
+#   #   #x<-list.files(here('Regions','DayMet',UnitName,'PredsBy1000'))[1]
+#   #   t1<-readRDS(here('Regions','DayMet',UnitName,'PredsBy1000',x))
+#   #   t1 <- t1 %>% filter(month=='08') %>% 
+#   #     select(ID_1KM,year,yday,month,tmax..deg.c.,tmin..deg.c.) %>%
+#   #     mutate(tmean..deg.c = tmin..deg.c. + (tmax..deg.c.-tmin..deg.c.)/2) %>%
+#   #     group_by(year,ID_1KM) %>% 
+#   #     summarise(AugMeanTemp = mean(tmean..deg.c)) %>% 
+#   #     rename(SAMPLEYEAR = year)
+#   #   return(t1)
+#   # }) %>% bind_rows()
+#   # 
+#   # nrow(DayMet_Preds_AugTemp)
+#   # 
+#   # Preds_AllYears <- lapply(1980:2020,FUN=function(yy){#foreach(yy = 1980:2020, .packages=c('dplyr','tidyr','SSN')) %do% {
+#   #   #Replace air temp with DayMet for this prediction year
+#   #   UnitIn_preddf <- getSSNdata.frame(UnitIn, "preds")
+#   #   DayMetThisYear <- DayMet_Preds_AugTemp %>% filter(SAMPLEYEAR == yy)
+#   #   OriginalAirData <- UnitIn_preddf %>% select(ID_1KM,SAMPLEYEAR,Air_Aug)
+#   #   OriginalAirData$SAMPLEYEAR <- yy
+#   #   CombiAirTemp <- OriginalAirData %>% left_join(DayMetThisYear,by=c('ID_1KM','SAMPLEYEAR'))
+#   #   
+#   #   UnitIn_preddf$Air_Aug <- CombiAirTemp$AugMeanTemp
+#   #   UnitIn_preddf$GLACIER <- as.numeric(UnitIn_preddf$GLACIER!=-9999)
+#   #   
+#   #   #Standarized variables and create a new SSN for model predictions
+#   #   contpred <- UnitIn_preddf %>% select(ELEV,CANOPY,SLOPE,PRECIP,CUMDRAINAG,Y_COORD,NLCD11PC,BFI,Air_Aug,Flow_Aug)
+#   #   contpred.s <- stdpreds(contpred,continuous)
+#   #   colnames(contpred.s) <- c("elev","canopy","slope","precip","drainage","lat","water","bfi","airtemp","flow")
+#   #   UnitIn_preddf.s <- data.frame(UnitIn_preddf,contpred.s)
+#   #   UnitIn_preddf.s$yearf <- factor(UnitIn_preddf.s$SAMPLEYEAR)
+#   #   UnitIn_Pred<- putSSNdata.frame(UnitIn_preddf.s,UnitIn,"preds")
+#   #   
+#   #   
+#   #   PredMod <- BestMod
+#   #   PredMod$ssn.object@predpoints <- UnitIn_Pred@predpoints
+#   #   p1 <- predict(PredMod,'preds')
+#   #   pred1<-getSSNdata.frame(p1,'preds') %>% select("OBSPREDID",'STREAM_AUG','STREAM_AUG.predSE')
+#   #   allpreds <- pred1
+#   #   colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
+#   #   
+#   #   write.csv(x=allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".csv")),row.names=F)
+#   #   write.dbf(allpreds,file=here('AnnualPredictions',UnitName,paste0("Pred_AugTemp_",yy,".dbf")))
+#   # })
+#   # 
+# #}
+#   
+#   # lf<-list.files(here('AnnualPredictions',UnitName),pattern='.csv')
+#   # AllTemps<-lapply(1:length(lf),FUN=function(x){
+#   #   #x<-1
+#   #   t1<-read.csv(here('AnnualPredictions',UnitName,lf[x])) %>% mutate(SAMPLEYEAR = 1979+x)
+#   #   return(t1)
+#   # }) %>% bind_rows()
+#   # head(AllTemps)
+#   # xt1<-xtabs(predtemp ~ OBSPREDID + SAMPLEYEAR,AllTemps)
+#   # plot(xt1[1,],type='l')
+#   # for(ff in 1:100){
+#   #   points(xt1[ff,],type='l',col='#00000055')
+#   # }
+#   
+#     # 
+#     # 
+#     # ?splitPredictions
+#     # 
+#     # UnitIn_Pred$ssn.object <- splitPredictions(UnitIn_Pred$ssn.object, "prednorth",chunksof=10000)
+#     # UnitIn_Pred$ssn.object <- splitPredictions(UnitIn_Pred$ssn.object, "predse",chunksof=7000)
+#     # UnitIn_Pred$ssn.object <- splitPredictions(UnitIn_Pred$ssn.object, "predsw",chunksof=7000)
+#     # 
+#     # # Make predictions
+#     # spok1p1 <- predict(spok1,"prednorth-1")
+#     # spok1p2 <- predict(spok1,"prednorth-2")
+#     # spok1p3 <- predict(spok1,"prednorth-3")
+#     # spok1p4 <- predict(spok1,"predse-1")
+#     # spok1p5 <- predict(spok1,"predse-2")
+#     # spok1p6 <- predict(spok1,"predsw-1")
+#     # spok1p7 <- predict(spok1,"predsw-2")
+#     # 
+#     # # Extrac prediction data frames
+#     # pred1df <- getSSNdata.frame(spok1p1,"prednorth-1")
+#     # pred2df <- getSSNdata.frame(spok1p2,"prednorth-2")
+#     # pred3df <- getSSNdata.frame(spok1p3,"prednorth-3")
+#     # pred4df <- getSSNdata.frame(spok1p4,"predse-1")
+#     # pred5df <- getSSNdata.frame(spok1p5,"predse-2")
+#     # pred6df <- getSSNdata.frame(spok1p6,"predsw-1")
+#     # pred7df <- getSSNdata.frame(spok1p7,"predsw-2")
+#     # 
+#     # # Reassemble the pieces into one batch.
+#     # allpreds <- rbind(pred1df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred2df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred3df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred4df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred5df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred6df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred7df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")])
+#     # colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
+#     # 
+#     # # Export prediction dataset as a csv (good for general use) and dbf (good for GIS)
+#     # write.csv(allpreds,"spok1preds.csv",row.names=F)
+#     # write.dbf(allpreds,"spok1preds.dbf")
+#     # 
+#     # # Compare predicted and observed at fitting sites, and export. 
+#     # predobs <- data.frame(spok1rdf$OBSPREDID,spok1rdf[,"_CrossValPred_"],spok1rdf$obsval)
+#     # colnames(predobs) <- c("obspredid","predicted","observed")
+#     # write.csv(predobs,"predobs.csv",row.names=F)
+#     # 
+#     # 
+#   }
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+#   
+# }
+# 
+# 
+# 
+# msh <- importSSN("MissouriHW.ssn",predpts="preds")
+# msh@data
+# #msh1 <- importPredpts(msh,"predse","ssn")
+# #msh <- importPredpts(msh,"predsw","ssn")
+# 
+# # Create distance matrices
+# createDistMat(msh,o.write=T,predpts="preds",amongpreds=T)
+# #createDistMat(msh,o.write=T,predpts="predse",amongpreds=T) 
+# #createDistMat(msh,o.write=T,predpts="predsw",amongpreds=T)
+# 
+# 
+# # Create raw torgegram
+#   msh_tg <- Torgegram(msh,"STREAM_AUG",nlag=20)
+#   jpeg("msh_rawtorg.jpg")
+#   plot(msh_tg, main = "Raw Data Torgegram") 
+# dev.off()
+# 
+# # Extract dataframe and fit basic aspatial model with un-standardized predictors
+# mshdf <- getSSNdata.frame(msh)
+# msh.lm <- lm(STREAM_AUG ~ ELEV + CANOPY + SLOPE + PRECIP + CUMDRAINAG + Y_COORD + NLCD11PC + GLACIER + BFI + TAILWATER + Air_Aug + Flow_Aug, data=mshdf)
+# summary(msh.lm)
+# 
+# # Standardize continuous covariates and add factor for year
+# continuous <- mshdf[,c(11:21)]
+# cont.s <- apply(continuous,2,stand)
+# colnames(cont.s) <- c("elev","canopy","slope","precip","drainage","lat","water","glacier","bfi","airtemp","flow")
+# mshdf.s <- data.frame(mshdf,cont.s)
+# mshdf.s$yearf <- factor(mshdf.s$SAMPLEYEAR)
+# mshs <- putSSNdata.frame(mshdf.s,msh,"Obs")
+# 
+# # Version without glacier + standardized variables
+# msh.lm2 <- lm(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, data=mshdf.s)
+# 
+# # Extract pure aspatial parameter estimates, back-transform, and save both versions of estimates
+# # Must be careful about the order of parameters! No attempt is made to match them by name.
+# # This WILL need to be adjusted depending if glaciers are or are not used in the model.
+# # Ditto for tailwater.
+# 
+# mshAe <- summary(msh.lm2)$coefficients
+# backtrans <- mshAe[-c(1,10),1:2]/(2*sapply(continuous[,-8],sd))
+# esttable <- cbind(rbind(mshAe[1,1:2],backtrans[1:8,],mshAe[10,1:2],backtrans[9:10,]),mshAe)
+# rownames(esttable) <- rownames(spokAe)
+# write.csv(esttable,"aspatialestimates.csv")
+# 
+# # Aspatial performance
+# predictA <- predict(msh.lm2)
+# sqrt(mean((predictA-mshdf.s$STREAM_AUG)^2))
+# # 1.885
+# 
+# # Examine correlations
+# library(ellipse)
+# cor(cont.s)
+# jpeg("corrplot.jpg")
+# plotcorr(cor(cont.s),type="lower")
+# dev.off()
+# 
+# # Get VIFs from linear model as an indicator of multicollinearity
+# library(car)
+# vif(msh.lm2)
+# #      ELEV     CANOPY      SLOPE     PRECIP CUMDRAINAG    Y_COORD   NLCD11PC 
+# #  2.399760   1.584861   1.351117   1.577125   1.909954   2.585873   1.305458 
+# #   GLACIER        BFI  TAILWATER    Air_Aug   Flow_Aug 
+# #  1.048601   1.255432   1.323322   1.048707   1.051820 
+# 
+# # Standardize preds based on obs and add factor for year- prednorth
+# mshpreddf <- getSSNdata.frame(msh, "preds")
+# contpred <- mshpreddf[,c(11:21)]
+# contpred.s <- stdpreds(contpred,continuous)
+# colnames(contpred.s) <- c("elev","canopy","slope","precip","drainage","lat","water","glacier","bfi","airtemp","flow")
+# mshpreddf.s <- data.frame(mshpreddf,contpred.s)
+# mshpreddf.s$yearf <- factor(mshpreddf.s$SAMPLEYEAR)
+# mshs <- putSSNdata.frame(mshpreddf.s,msh,"preds")
+# 
+# 
+# ###########
+# # Model1  #
+# ###########
+# 
+# # We run all models with the same predictor variables, whether significant or not, except:
+# # Glacier and Tailwater are omitted as a covariates in units where they are absent 
+# # In this unit we use tailwater but not glacier.
+# 
+# # Note that the correlation model structure was developed after testing of the Salmon and
+# # Clearwater production units. Once the model structure was finalized, we decided
+# # to run all final models using EstMeth= â€œMLâ€.
+# 
+# starttime <- Sys.time() # not necessary; just for timing longer runs
+# 
+# unique(mshs@obspoints@SSNPoints[[1]]@point.data$locID)
+# 
+# #msh1 <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.tailup","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
+# 
+# #get errors for putting tailup and taildown in the same model
+# msh.tu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","Exponential.tailup"), addfunccol = "afvArea")
+# msh.td <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown"), addfunccol = "afvArea")
+# msh.tu.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")
+# #msh.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea") 
+# 
+# #msh.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.tailup","Exponential.Euclid",'Exponential.taildown'), addfunccol = "afvArea")
+# 
+# 
+# AIC(msh.tu)
+# AIC(msh.td)
+# AIC(msh.tu.eu)
+# 
+# msh1 <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, mshs, EstMeth= "ML", family="gaussian",CorModels = c("Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")
+# 
+# elapsed <- Sys.time()-starttime # See above note
+# elapsed
+# 
+# # Extract predictions/ Leave-one-out cross validation predictions
+# msh1r <- residuals(msh1, cross.validation=T)
+# msh1rrdf <- getSSNdata.frame(msh1r)
+# 
+# # Torgegram of fitted model residuals
+# msh1t <- Torgegram(msh1r,"_resid.crossv_",nlag=20)
+# jpeg("msh1residtorg.jpg")
+# plot(msh1t, main= "Model1 Residuals Torgegram") 
+# dev.off()
+# 
+# #Root mean squared error (RMSE) of cross-validated predictions
+# sqrt(mean((spok1rdf[,"_CrossValPred_"]-spok1rdf$obsval)^2))
+# # 0.969
+# 
+# #RMSE of fixed effects only
+# sqrt(mean((spok1rdf[,"_fit_"]-spok1rdf$obsval)^2))
+# # 1.935
+# 
+# # Null RMSE
+# sqrt(mean((spok1rdf$obsval-mean(spok1rdf$obsval))^2))
+# # 2.996
+# 
+# #Pseudo-r2 of cross-validated predictions. 
+# cor(spok1rdf$obsval,spok1rdf[,"_CrossValPred_"])^2
+# # 0.895
+# 
+# # Get parameter estimates, back-transform, and save both versions of estimates
+# # Must be careful about the order of parameters! No attempt is made to match them by name.
+# # This WILL need to be adjusted depending if glaciers are or are not used in the model.
+# # Ditto for tailwater.
+# 
+# spok1e <- summary(spok1)$fixed.effects.estimates
+# backtrans <- spok1e[-c(1,10),2:3]/(2*sapply(continuous[,c(1:7,9:11)],sd))
+# esttable <- cbind(spok1e[,1],rbind(spok1e[1,2:3],backtrans[1:8,],spok1e[10,2:3],backtrans[9:10,]),spok1e[,2:5])
+# write.csv(esttable,"spok1estimates.csv")
+# 
+# # Outlier analysis
+# resids <- spok1rdf[,"_resid.student_"]
+# outlie <- spok1rdf[abs(resids)>5,c("pid","obsval","_CrossValPred_","_resid.student_")]
+# # 18 records have abs studentized residuals >5; 5 records are >7; 1 record >10. 
+# 
+# 
+# ###############
+# # Predictions #
+# ###############
+# 
+# 
+# # Split prediction datasets into pieces for computers with lowish RAM. 
+# # The "chunksof" setting depends on available memory on the computer.
+# # 10-12K is about the limit on a machine with 16GB RAM.
+# # Used chunks of 7000 for predse and predsw just to make the two batches even, but 10K would have been OK too.
+# # Many datasets run without splitting on machines with 32GB RAM; 
+# # I think all will run without splitting on machines with 64GB RAM.
+# 
+# spok1$ssn.object <- splitPredictions(spok1$ssn.object, "prednorth",chunksof=10000)
+# spok1$ssn.object <- splitPredictions(spok1$ssn.object, "predse",chunksof=7000)
+# spok1$ssn.object <- splitPredictions(spok1$ssn.object, "predsw",chunksof=7000)
+# 
+# # Make predictions
+# spok1p1 <- predict(spok1,"prednorth-1")
+# spok1p2 <- predict(spok1,"prednorth-2")
+# spok1p3 <- predict(spok1,"prednorth-3")
+# spok1p4 <- predict(spok1,"predse-1")
+# spok1p5 <- predict(spok1,"predse-2")
+# spok1p6 <- predict(spok1,"predsw-1")
+# spok1p7 <- predict(spok1,"predsw-2")
+# 
+# # Extrac prediction data frames
+# pred1df <- getSSNdata.frame(spok1p1,"prednorth-1")
+# pred2df <- getSSNdata.frame(spok1p2,"prednorth-2")
+# pred3df <- getSSNdata.frame(spok1p3,"prednorth-3")
+# pred4df <- getSSNdata.frame(spok1p4,"predse-1")
+# pred5df <- getSSNdata.frame(spok1p5,"predse-2")
+# pred6df <- getSSNdata.frame(spok1p6,"predsw-1")
+# pred7df <- getSSNdata.frame(spok1p7,"predsw-2")
+# 
+# # Reassemble the pieces into one batch.
+# allpreds <- rbind(pred1df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred2df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred3df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred4df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred5df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred6df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")],pred7df[,c("OBSPREDID","STREAM_AUG","STREAM_AUG.predSE")])
+# colnames(allpreds) <- c("OBSPREDID","predtemp","predtempse")
+# 
+# # Export prediction dataset as a csv (good for general use) and dbf (good for GIS)
+# write.csv(allpreds,"spok1preds.csv",row.names=F)
+# write.dbf(allpreds,"spok1preds.dbf")
+# 
+# # Compare predicted and observed at fitting sites, and export. 
+# predobs <- data.frame(spok1rdf$OBSPREDID,spok1rdf[,"_CrossValPred_"],spok1rdf$obsval)
+# colnames(predobs) <- c("obspredid","predicted","observed")
+# write.csv(predobs,"predobs.csv",row.names=F)
+# 
+# 
+# ###########
+# # Model2  #
+# ###########
+# 
+# # â€œAspatialâ€ model. Same predictors as spatial model. Includes random effects for site and year. 
+# 
+# starttime <- Sys.time()
+# spok2 <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + TAILWATER + airtemp + flow, spoks, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf"), addfunccol = "afvArea")
+# elapsed <- Sys.time()-starttime
+# elapsed
+# 
+# # Extract predictions/ LOO CV predictions
+# spok2r <- residuals(spok2,cross.validation=T)
+# spok2rdf <- getSSNdata.frame(spok2r)
+# 
+# # Create Torgegram of residuals
+# spok2t <- Torgegram(spok2r,"_resid.crossv_",nlag=20)
+# jpeg("spok2residtorg.jpg")
+# plot(spok2t, main= "Model2 Residuals Torgegram") 
+# dev.off()
+# 
+# #RMSPE of cross-validated predictions
+# sqrt(mean((spok2rdf[,"_CrossValPred_"]-spok2rdf$obsval)^2))
+# # 1.176
+# 
+# #RMSPE of fixed effects only
+# sqrt(mean((spok2rdf[,"_fit_"]-spok2rdf$obsval)^2))
+# # 1.890
+# 
+# # Null RMSPE
+# sqrt(mean((spok2rdf$obsval-mean(spok2rdf$obsval))^2))
+# # 2.996
+# 
+# #r2 of cross-validated predictions. 
+# cor(spok2rdf$obsval,spok2rdf[,"_CrossValPred_"])^2
+# # r2 = 0.846
+# 
+# # Get parameter estimates, back-transform, and save both versions of estimates
+# spok2e <- summary(spok2)$fixed.effects.estimates
+# backtrans <- spok2e[-c(1,10),2:3]/(2*sapply(continuous[,c(1:7,9:11)],sd))
+# esttable <- cbind(spok2e[,1],rbind(spok2e[1,2:3],backtrans[1:8,],spok2e[10,2:3],backtrans[9:10,]),spok2e[,2:5])
+# write.csv(esttable,"spok2estimates.csv")
+# 
+# # Save the full image including all modeling results. Optional.
+# save.image(file = â€œspok.RData")
+# 
+# 
