@@ -107,8 +107,8 @@ if(F){
   }
 } 
   
-  UnitIn<-readRDS(paste0(data_dir,paste0(UnitName,'.DayMetSSN.RDS')))
-  UnitIn@path <- paste0(data_dir,'Regions/Spokoot.ssn')
+  UnitIn<-readRDS(paste0(data_dir,paste0('DayMetSSN/',UnitName,'.DayMetSSN.RDS')))
+  UnitIn@path <- paste0(data_dir,paste0('Regions/',UnitName,'.ssn'))
   proj4string<-proj4string(UnitIn)
   
   #UnitIn@obspoints@SSNPoints[[1]]
