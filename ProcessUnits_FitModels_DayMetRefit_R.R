@@ -103,6 +103,7 @@ if(F){
     if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
       createDistMat(UnitIn,o.write=T,predpts="preds",amongpreds=T)
     }
+    
   
   }
 } 
