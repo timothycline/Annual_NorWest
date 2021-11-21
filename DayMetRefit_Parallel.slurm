@@ -2,7 +2,7 @@
 
 # testing some scripts
 
-#SBATCH --job-name=SpokootSSN_Refit
+#SBATCH --job-name=AllBasinSSN_Refit
 #SBATCH -n 7
 #SBATCH -N 7
 #SBATCH -p normal
