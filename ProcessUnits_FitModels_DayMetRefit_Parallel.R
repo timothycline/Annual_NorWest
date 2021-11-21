@@ -53,7 +53,7 @@ ests <- function(x) {
 
 
 Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeBear.ssn','Spokoot.ssn','UpMissMarias.ssn','UpYellBighorn.ssn')
-foreach(u=c(1,2,3,5,6,7,8),.packages=c('SSN')){
+foreach(u=c(1,2,3,5,6,7,8),.packages=c('SSN')) %dopar% {
   
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
 
