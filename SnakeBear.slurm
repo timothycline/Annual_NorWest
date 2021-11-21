@@ -12,6 +12,6 @@
 #SBATCH --mail-user=tcline@usgs.gov
 #SBATCH -o SnakeBearSSN_Refit.out
 
-module load gnu8/8.3.0 R/1.1.1 gdal/3.1.0 proj/7.0.1
+module load gnu8/8.3.0 R/4.1.1 gdal/3.1.0 proj/7.0.1
 
 prun Rscript ProcessUnits_FitModels_DayMetRefit_SnakeBear.R
