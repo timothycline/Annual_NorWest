@@ -55,7 +55,10 @@ ests <- function(x) {
 Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeBear.ssn','Spokoot.ssn','UpMissMarias.ssn','UpYellBighorn.ssn')
   u<-1
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
-
+  
+  UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='preds')
+  createDistMat(UnitIn,o.write=T,predpts="preds",amongpreds=T)
+  
   UnitIn<-readRDS(paste0(data_dir,paste0('DayMetSSN/',UnitName,'.DayMetSSN.RDS')))
   UnitIn@path <- paste0(data_dir,paste0('Regions/',UnitName,'.ssn'))
   proj4string<-proj4string(UnitIn)

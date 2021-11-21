@@ -50,22 +50,39 @@ q() #quit R
 
 #git clone https://code.chs.usgs.gov/sas/arc/Getting_Started_Yeti_Examples.git
 #ls
-cd ~
-rm -r Annual_NorWest
-git clone https://github.com/timothycline/Annual_NorWest.git
+#cd ~
+#rm -r Annual_NorWest
+#git clone https://github.com/timothycline/Annual_NorWest.git
 
-git pull https://github.com/timothycline/Annual_NorWest.git
+git pull
+
 #git reset --hard https://github.com/timothycline/Annual_NorWest.git/master
 
 cd Annual_NorWest
 #cat foreach.slurm 
 #vi foreach.slurm
 
-sbatch test.slurm #Submit Job
+#sbatch test.slurm #Submit Job
+#cat SpokootDayMet.out
 
-cat SpokootDayMet.out
+#sbatch DayMetRefit_Parallel.slurm #Submit Job #5840483
+#cat DayMetRefitParallel.out
+sbatch Spokoot.slurm
+cat SpokootSSN_Refit.out
+
+sbatch Clearwater.slurm
+cat ClearwaterSSN_Refit.out
+
+sbatch SnakeBear.slurm
+sbatch MissouriHW.slurm
+sbatch Spokoot.slurm
+sbatch UpMissMarias.slurm
+sbatch 
 
 sidle #Check Status
+
+
 scancel <jobid>
+scancel 5840479
 scancel -u <tcline>
 
