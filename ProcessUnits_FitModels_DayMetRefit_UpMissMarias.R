@@ -86,13 +86,13 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   
   # A-spatial models with
   if(GlacierBool & !(TailwaterBool)){
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
   }else if(!GlacierBool & (TailwaterBool)){
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
   }else if(GlacierBool & TailwaterBool){
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
   }else{
-    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi  + airtemp + flow + (1|locID) + (1|yearf), data=unit_df.s)
+    unit.aspatial <- lmer(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi  + airtemp + flow + (1|locID2) + (1|yearf), data=unit_df.s)
   }
   
   summary(unit.aspatial)
@@ -115,7 +115,7 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
     # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
     # 
     unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + drainage + lat + water + bfi + airtemp + flow, 
-                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   }else if(!GlacierBool & (TailwaterBool)){ #If tailwaters but not glaciers
     # unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
     # unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
@@ -123,7 +123,7 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
     # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){message(e);return(NA)})
     # 
     unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + drainage + lat + water + bfi + airtemp + flow, 
-                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   
   }else if(GlacierBool & TailwaterBool){ #If tailwaters and glaciers
     # unit.tu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")
@@ -132,14 +132,14 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
     # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + TAILWATER + GLACIER + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
     # 
     unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + GLACIER + TAILWATER + drainage + lat + water + bfi + airtemp + flow, 
-                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   }else{ #If no tailwaters and no glaciers
     # unit.tu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup"), addfunccol = "afvArea")},error=function(e){return(NA)})
     # unit.td <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown"), addfunccol = "afvArea")},error=function(e){return(NA)})
     # unit.tu.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.tailup","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
     # unit.td.eu <- tryCatch({glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, UnitIn_s, EstMeth= "REML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")},error=function(e){return(NA)})
     unit.tu.td.eu <- glmssn(STREAM_AUG ~ elev + canopy + slope + precip + drainage + lat + water + bfi + airtemp + flow, 
-                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
+                            UnitIn_s, EstMeth= "ML", family="gaussian",CorModels = c("locID2","yearf","Exponential.taildown","Exponential.Euclid"), addfunccol = "afvArea")
   }
   
   # AICcomp <- c(tryCatch({AIC(unit.tu)},error=function(e){return(NA)}),
