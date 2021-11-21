@@ -10,7 +10,6 @@
 # some automatic parallel processing of the time-consuming matrix inversions.
 # Microsoft OpenR is a pre-compiled version of this, though sometimes wonky. 
 
-
 # Load the SSN library of functions
 library(here)
 library(SSN)
