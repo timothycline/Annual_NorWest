@@ -155,8 +155,8 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   BestMod<-unit.tu.td.eu#switch(which.min(AICcomp),unit.tu,unit.td,unit.tu.eu,unit.td.eu)
   #BestMod <- update(BestMod[[1]],EstMeth='ML')
   
-  saveRDS(BestMod,paste(data_dir,'Regions/',paste0('BestModel_',UnitName,'.RDS')))
-  save(list=ls(),file=paste(data_dir,'Regions/',paste0('Workspace_',UnitName,'.Rdata')))
+  saveRDS(BestMod,paste0(data_dir,'Regions/',paste0('BestModel_',UnitName,'.RDS')))
+  save(list=ls(),file=paste0(data_dir,'Regions/',paste0('Workspace_',UnitName,'.Rdata')))
   
   BestMod_r <- residuals(BestMod, cross.validation=T)
   BestMod_rdf <- getSSNdata.frame(BestMod_r)
