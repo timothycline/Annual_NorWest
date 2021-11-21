@@ -14,4 +14,4 @@
 
 module load gnu8/8.3.0 R/4.1.1 gdal/3.1.0 proj/7.0.1
 
-prun Rscript ProcessUnits_FitModels_DayMetRefit_Midsnake.R
+prun Rscript ProcessUnits_FitModels_DayMetRefit_MidSnake.R
