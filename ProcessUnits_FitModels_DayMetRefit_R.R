@@ -20,7 +20,9 @@ library(tidyr)
 library(doParallel)
 library(lme4)
 
-data_dir <- '~/Annual_NorWest_Data/'
+data_dir <- '../Annual_NorWest_Data/'
+
+#data_dir <- '/Volumes/Cline_USGS/Annual_NorWest_Data/'
 
 # Function to standardize variables
 stand <- function(x) { (x-mean(x))/(2*sd(x))}
@@ -54,7 +56,7 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   u<-6
   
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
-
+if(F){
   if(Units[u]=='Midsnake.ssn'){
     UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='pred_ne')
     UnitIn <- importPredpts(UnitIn,'pred_se','ssn')
@@ -103,9 +105,12 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
     }
   
   }
-  proj4string<-proj4string(UnitIn)
+} 
   
   UnitIn<-readRDS(paste0(data_dir,paste0(UnitName,'.DayMetSSN.RDS')))
+  UnitIn@path <- paste0(data_dir,'Regions/Spokoot.ssn')
+  proj4string<-proj4string(UnitIn)
+  
   #UnitIn@obspoints@SSNPoints[[1]]
   
   #Get dataframe

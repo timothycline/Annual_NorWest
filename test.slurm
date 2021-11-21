@@ -2,12 +2,12 @@
 
 # testing some scripts
 
-#SBATCH --job-name=tcline_test
-#SBATCH -n 1
+#SBATCH --job-name=SpokootSSN_Refit
+#SBATCH -n 2
 #SBATCH -N 1
 #SBATCH -p normal
 #SBATCH --account=norock
-#SBATCH --time=10:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=tcline@usgs.gov
 #SBATCH -o SpokootDayMet.out

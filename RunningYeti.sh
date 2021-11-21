@@ -50,17 +50,20 @@ q() #quit R
 
 #git clone https://code.chs.usgs.gov/sas/arc/Getting_Started_Yeti_Examples.git
 #ls
-
+cd ~
+rm -r Annual_NorWest
 git clone https://github.com/timothycline/Annual_NorWest.git
 
-cd Getting_Started_Yeti_Examples
-cat foreach.slurm 
-vi foreach.slurm
+git pull https://github.com/timothycline/Annual_NorWest.git
+#git reset --hard https://github.com/timothycline/Annual_NorWest.git/master
 
+cd Annual_NorWest
+#cat foreach.slurm 
+#vi foreach.slurm
 
-sbatch foreach.slurm #Submit Job
+sbatch test.slurm #Submit Job
 
-
+cat SpokootDayMet.out
 
 sidle #Check Status
 scancel <jobid>
