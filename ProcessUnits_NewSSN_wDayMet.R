@@ -12,8 +12,7 @@
 
 # Load the SSN library of functions
 library(here)
-library(SSN)
-library(foreign)
+library(SSN2)
 library(dplyr)
 library(tidyr)
 library(doParallel)
@@ -85,66 +84,67 @@ GetDayMet <- function(Lat,Lon,ID_1KM){
 Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeBear.ssn','Spokoot.ssn','UpMissMarias.ssn','UpYellBighorn.ssn')
 for(u in c(1,2,3,5,6,7,8)){
   
+  u<-8
+  
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
 
   if(Units[u]=='Midsnake.ssn'){
-    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='pred_ne')
-    UnitIn <- importPredpts(UnitIn,'pred_se','ssn')
-    UnitIn <- importPredpts(UnitIn,'pred_we','ssn')
-    
+    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('pred_ne'))
+    UnitIn <- ssn_import_predpts(UnitIn,'pred_se')
+    UnitIn <- ssn_import_predpts(UnitIn,'pred_we')
+
     PredPtNames <- c('pred_ne','pred_se','pred_we')
-    
+
     if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="pred_ne",amongpreds=T)
-      createDistMat(UnitIn,o.write=T,predpts="pred_se",amongpreds=T) 
-      createDistMat(UnitIn,o.write=T,predpts="pred_we",amongpreds=T)
+      ssn_create_distmat(UnitIn,predpts="pred_ne",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="pred_se",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="pred_we",overwrite=TRUE,among_predpts=TRUE)
     }
-    
+
   }else if(Units[u]=='Salmon.ssn'){
-    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='preds-1')
-    UnitIn <- importPredpts(UnitIn,'pred-2','ssn')
-    
+    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('preds-1'))
+    UnitIn <- ssn_import_predpts(UnitIn,'pred-2')
+
     PredPtNames <- c('preds-1','pred-2')
-    
+
     if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="preds-1",amongpreds=T)
-      createDistMat(UnitIn,o.write=T,predpts="preds-2",amongpreds=T) 
+      ssn_create_distmat(UnitIn,predpts="preds-1",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="preds-2",overwrite=TRUE,among_predpts=TRUE)
     }
-    
+
   }else if(Units[u]=='SnakeBear.ssn'){
-    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='prednorth')
-    UnitIn <- importPredpts(UnitIn,'predsouth','ssn')
-    
+    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('prednorth'))
+    UnitIn <- ssn_import_predpts(UnitIn,'predsouth')
+
     PredPtNames <- c('prednorth','predsouth')
-    
+
     if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="prednorth",amongpreds=T)
-      createDistMat(UnitIn,o.write=T,predpts="predsouth",amongpreds=T) 
+      ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="predsouth",overwrite=TRUE,among_predpts=TRUE)
     }
-    
+
   }else if(Units[u]=='Spokoot.ssn'){
-    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='prednorth')
-    UnitIn <- importPredpts(UnitIn,'predse','ssn')
-    UnitIn <- importPredpts(UnitIn,'predsw','ssn')
-    
+    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('prednorth'))
+    UnitIn <- ssn_import_predpts(UnitIn,'predse')
+    UnitIn <- ssn_import_predpts(UnitIn,'predsw')
+
     PredPtNames <- c('prednorth','predse','predsw')
-    
+
     if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="prednorth",amongpreds=T)
-      createDistMat(UnitIn,o.write=T,predpts="predse",amongpreds=T) 
-      createDistMat(UnitIn,o.write=T,predpts="predsw",amongpreds=T) 
+      ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="predse",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="predsw",overwrite=TRUE,among_predpts=TRUE)
     }
-    
+
   }else{
-    UnitIn <- importSSN(paste0(data_dir,'Regions/',Units[u]),predpts='preds')
+    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('preds'))
     PredPtNames <- c('preds')
-    
+
     if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="preds",amongpreds=T)
+      ssn_create_distmat(UnitIn,predpts="preds",overwrite=TRUE,among_predpts=TRUE)
     }
-  
+
   }
-  proj4string<-proj4string(UnitIn)
   #UnitIn@obspoints@SSNPoints[[1]]
   
   #Load DayMet predictions for all observation locations
@@ -172,10 +172,12 @@ for(u in c(1,2,3,5,6,7,8)){
   #UnitIn_save <- UnitIn
   
   #Get dataframe
-  unit_df <- getSSNdata.frame(UnitIn)
+  unit_df <- ssn_get_data(UnitIn, "obs") %>% sf::st_drop_geometry()
   
   #Replace original air temp data with new daymet measurements
-  OriginalAirData <- unit_df %>% select(ID_1KM,SAMPLEYEAR,Air_Aug)
+  OriginalAirData <- unit_df %>% select(SAMPLEYEAR,ID_1KM,Air_Aug)
+  #OriginalAirData %>% filter(ID_1KM==159515)
+  #DayMet_Obs_AugTemp %>% filter(ID_1KM == 159515)
   CombiAirTemp <- OriginalAirData %>% left_join(DayMet_Obs_AugTemp,by=c('ID_1KM','SAMPLEYEAR'))
   unit_df$Air_Aug <- CombiAirTemp$AugMeanTemp
   
@@ -183,7 +185,7 @@ for(u in c(1,2,3,5,6,7,8)){
   CombiPrecip <- OriginalPrecipData %>% left_join(DayMet_Obs_AnnualPrecip,by=c('ID_1KM','SAMPLEYEAR'))
   unit_df$PRECIP <- CombiPrecip$AnnualPrecip
   
-  UnitIn_DayMet <- putSSNdata.frame(unit_df,UnitIn,"Obs")
+  UnitIn_DayMet <- ssn_put_data(unit_df,UnitIn,"obs")
   
   saveRDS(UnitIn_DayMet,file=paste0(data_dir,paste0(UnitName,'.DayMetSSN.RDS')))
 }

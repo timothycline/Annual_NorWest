@@ -71,18 +71,34 @@ sbatch Spokoot.slurm
 cat SpokootSSN_Refit.out
 
 sbatch Clearwater.slurm
+#failed matrix error
 cat ClearwaterSSN_Refit.out
 
 sbatch SnakeBear.slurm
+#Worked
+cat SnakeBearSSN_Refit.out
+
+sbatch Midsnake.slurm
+cat MidsnakeSSN_Refit.out
+
 sbatch MissouriHW.slurm
-sbatch Spokoot.slurm
+#failed matrix error
+cat MissouriHWSSN_Refit.out
+
 sbatch UpMissMarias.slurm
-sbatch 
+#Worked
+cat UpMissMariasSSN_Refit.out
+
+sbatch UpYellBighorn.slurm
+cat UpYellBighornSSN_Refit.out
+
+#sbatch Salmon.slurm
+#cat SalmonSSN_Refit.out
 
 sidle #Check Status
 
 
 scancel <jobid>
 scancel 5840479
-scancel -u <tcline>
+scancel -u tcline
 

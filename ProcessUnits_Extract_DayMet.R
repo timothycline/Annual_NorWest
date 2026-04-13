@@ -12,14 +12,14 @@
 
 # Load the SSN library of functions
 library(here)
-library(SSN)
+library(SSN2)
 library(dplyr)
 library(tidyr)
 library(daymetr)
 library(foreach)
 library(doParallel)
 
-
+data_dir <- '/Volumes/Cline_USGS/Annual_NorWest_Data/'
 # Function to standardize variables
 stand <- function(x) { (x-mean(x))/(2*sd(x))}
 
@@ -89,53 +89,54 @@ for(u in c(1)){ #1,2,3,NOT4,5,6,7
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
   
   if(Units[u]=='Midsnake.ssn'){
-    UnitIn <- importSSN(here('Regions',Units[u]),predpts='pred_ne')
-    UnitIn <- importPredpts(UnitIn,'pred_se','ssn')
-    UnitIn <- importPredpts(UnitIn,'pred_we','ssn')
-    
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('pred_ne'))
+    UnitIn <- ssn_import_predpts(UnitIn,'pred_se')
+    UnitIn <- ssn_import_predpts(UnitIn,'pred_we')
+
     if(!file.exists(here('Regions',Units[u],'distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="pred_ne",amongpreds=T)
-      createDistMat(UnitIn,o.write=T,predpts="pred_se",amongpreds=T) 
-      createDistMat(UnitIn,o.write=T,predpts="pred_we",amongpreds=T)
+      ssn_create_distmat(UnitIn,predpts="pred_ne",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="pred_se",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="pred_we",overwrite=TRUE,among_predpts=TRUE)
     }
-    
+
   }else if(Units[u]=='SnakeBear.ssn'){
-    UnitIn <- importSSN(here('Regions',Units[u]),predpts='prednorth')
-    UnitIn <- importPredpts(UnitIn,'predsouth','ssn')
-    
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('prednorth'))
+    UnitIn <- ssn_import_predpts(UnitIn,'predsouth')
+
     if(!file.exists(here('Regions',Units[u],'distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="prednorth",amongpreds=T)
-      createDistMat(UnitIn,o.write=T,predpts="predsouth",amongpreds=T) 
+      ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="predsouth",overwrite=TRUE,among_predpts=TRUE)
     }
-    
+
   }else if(Units[u]=='Spokoot.ssn'){
-    UnitIn <- importSSN(here('Regions',Units[u]),predpts='prednorth')
-    UnitIn <- importPredpts(UnitIn,'predse','ssn')
-    UnitIn <- importPredpts(UnitIn,'predsw','ssn')
-    
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('prednorth'))
+    UnitIn <- ssn_import_predpts(UnitIn,'predse')
+    UnitIn <- ssn_import_predpts(UnitIn,'predsw')
+
     if(!file.exists(here('Regions',Units[u],'distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="prednorth",amongpreds=T)
-      createDistMat(UnitIn,o.write=T,predpts="predse",amongpreds=T) 
-      createDistMat(UnitIn,o.write=T,predpts="predsw",amongpreds=T) 
+      ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="predse",overwrite=TRUE,among_predpts=TRUE)
+      ssn_create_distmat(UnitIn,predpts="predsw",overwrite=TRUE,among_predpts=TRUE)
     }
-    
+
   }else{
-    UnitIn <- importSSN(here('Regions',Units[u]),predpts='preds')
-    
+    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('preds'))
+
     if(!file.exists(here('Regions',Units[u],'distance'))){
-      createDistMat(UnitIn,o.write=T,predpts="preds",amongpreds=T)
+      ssn_create_distmat(UnitIn,predpts="preds",overwrite=TRUE,among_predpts=TRUE)
     }
-  
+
   }
-  proj4string<-proj4string(UnitIn)
-  #UnitIn@obspoints@SSNPoints[[1]]
   
   #Pull DayMet predictions for all observation locations
-  LatLons_Obs <- apply(UnitIn@obspoints@SSNPoints[[1]]@point.coords,1,FUN=function(x){
-    p1<-proj4::project(x,proj4string,inverse=TRUE)
-  }) %>% t() %>% data.frame()
-  colnames(LatLons_Obs) <- c('Lon','Lat')
-  LatLons_Obs$ID_1KM <- UnitIn@obspoints@SSNPoints[[1]]@point.data$ID_1KM #as.numeric(levels(UnitIn@obspoints@SSNPoints[[1]]@point.data$ID_1KM)[UnitIn@obspoints@SSNPoints[[1]]@point.data$ID_1KM])
+  obs_sf <- ssn_get_data(UnitIn, "obs")
+  obs_wgs84 <- sf::st_transform(obs_sf, crs = 4326)
+  obs_coords <- sf::st_coordinates(obs_wgs84)
+  LatLons_Obs <- data.frame(
+    ID_1KM = obs_sf$ID_1KM,
+    Lat    = obs_coords[, "Y"],
+    Lon    = obs_coords[, "X"]
+  )
   LatLons_Obs <- LatLons_Obs %>% distinct() %>% select(ID_1KM, Lat, Lon)
   #write.table(LatLons_Obs,file=paste0('Regions/LatLons_Obs_',UnitName,'.csv'),row.names=F,sep=',')
   
@@ -152,14 +153,18 @@ for(u in c(1)){ #1,2,3,NOT4,5,6,7
   }) %>% bind_rows()
   
   #save(DayMet_Obs,file=paste0('Regions/DayMet/DayMet_Obs',UnitName,'.Rdata'))
+  #saveRDS(DayMet_Obs,file=paste0('/Volumes/Cline_USGS/DayMet/',UnitName,'/',paste0(UnitName,'.Obs','.RDS')))
   saveRDS(DayMet_Obs,file=here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS')))
   
   #Pull DayMet predictions for all prediction sites
-  LatLons_Pred <- apply(UnitIn@predpoints@SSNPoints[[1]]@point.coords,1,FUN=function(x){
-    p1<-proj4::project(x,proj4string,inverse=TRUE)
-  }) %>% t() %>% data.frame()
-  colnames(LatLons_Pred) <- c('Lon','Lat')
-  LatLons_Pred$ID_1KM <- UnitIn@predpoints@SSNPoints[[1]]@point.data$ID_1KM #as.numeric(levels(UnitIn@predpoints@SSNPoints[[1]]@point.data$ID_1KM)[UnitIn@predpoints@SSNPoints[[1]]@point.data$ID_1KM])
+  pred_sf <- ssn_get_data(UnitIn, "preds")
+  pred_wgs84 <- sf::st_transform(pred_sf, crs = 4326)
+  pred_coords <- sf::st_coordinates(pred_wgs84)
+  LatLons_Pred <- data.frame(
+    ID_1KM = pred_sf$ID_1KM,
+    Lat    = pred_coords[, "Y"],
+    Lon    = pred_coords[, "X"]
+  )
   LatLons_Pred <- LatLons_Pred %>% distinct() %>% select(ID_1KM, Lat, Lon)
   
   #Break Into Groups of 1000
