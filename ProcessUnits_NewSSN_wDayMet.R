@@ -17,8 +17,6 @@ library(dplyr)
 library(tidyr)
 library(doParallel)
 
-data_dir <- '/Volumes/Cline_USGS/Annual_NorWest_Data/'
-
 # Function to standardize variables
 stand <- function(x) { (x-mean(x))/(2*sd(x))}
 
@@ -89,58 +87,58 @@ for(u in c(1,2,3,5,6,7,8)){
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
 
   if(Units[u]=='Midsnake.ssn'){
-    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('pred_ne'))
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('pred_ne'))
     UnitIn <- ssn_import_predpts(UnitIn,'pred_se')
     UnitIn <- ssn_import_predpts(UnitIn,'pred_we')
 
     PredPtNames <- c('pred_ne','pred_se','pred_we')
 
-    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
+    if(!file.exists(here('Regions',Units[u],'distance'))){
       ssn_create_distmat(UnitIn,predpts="pred_ne",overwrite=TRUE,among_predpts=TRUE)
       ssn_create_distmat(UnitIn,predpts="pred_se",overwrite=TRUE,among_predpts=TRUE)
       ssn_create_distmat(UnitIn,predpts="pred_we",overwrite=TRUE,among_predpts=TRUE)
     }
 
   }else if(Units[u]=='Salmon.ssn'){
-    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('preds-1'))
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('preds-1'))
     UnitIn <- ssn_import_predpts(UnitIn,'pred-2')
 
     PredPtNames <- c('preds-1','pred-2')
 
-    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
+    if(!file.exists(here('Regions',Units[u],'distance'))){
       ssn_create_distmat(UnitIn,predpts="preds-1",overwrite=TRUE,among_predpts=TRUE)
       ssn_create_distmat(UnitIn,predpts="preds-2",overwrite=TRUE,among_predpts=TRUE)
     }
 
   }else if(Units[u]=='SnakeBear.ssn'){
-    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('prednorth'))
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('prednorth'))
     UnitIn <- ssn_import_predpts(UnitIn,'predsouth')
 
     PredPtNames <- c('prednorth','predsouth')
 
-    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
+    if(!file.exists(here('Regions',Units[u],'distance'))){
       ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
       ssn_create_distmat(UnitIn,predpts="predsouth",overwrite=TRUE,among_predpts=TRUE)
     }
 
   }else if(Units[u]=='Spokoot.ssn'){
-    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('prednorth'))
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('prednorth'))
     UnitIn <- ssn_import_predpts(UnitIn,'predse')
     UnitIn <- ssn_import_predpts(UnitIn,'predsw')
 
     PredPtNames <- c('prednorth','predse','predsw')
 
-    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
+    if(!file.exists(here('Regions',Units[u],'distance'))){
       ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
       ssn_create_distmat(UnitIn,predpts="predse",overwrite=TRUE,among_predpts=TRUE)
       ssn_create_distmat(UnitIn,predpts="predsw",overwrite=TRUE,among_predpts=TRUE)
     }
 
   }else{
-    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('preds'))
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('preds'))
     PredPtNames <- c('preds')
 
-    if(!file.exists(paste0(data_dir,'Regions/',Units[u],'/distance'))){
+    if(!file.exists(here('Regions',Units[u],'distance'))){
       ssn_create_distmat(UnitIn,predpts="preds",overwrite=TRUE,among_predpts=TRUE)
     }
 
@@ -148,7 +146,7 @@ for(u in c(1,2,3,5,6,7,8)){
   #UnitIn@obspoints@SSNPoints[[1]]
   
   #Load DayMet predictions for all observation locations
-  DayMet_Obs<-readRDS(paste('/Volumes/Cline_USGS/DayMet',UnitName,paste0(UnitName,'.Obs','.RDS'),sep='/'))
+  DayMet_Obs<-readRDS(here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS')))
   head(DayMet_Obs)
   DayMet_Obs_AugTemp <- DayMet_Obs %>% filter(month=='08') %>% 
     select(ID_1KM,year,yday,month,tmax..deg.c.,tmin..deg.c.) %>%
@@ -187,7 +185,7 @@ for(u in c(1,2,3,5,6,7,8)){
   
   UnitIn_DayMet <- ssn_put_data(unit_df,UnitIn,"obs")
   
-  saveRDS(UnitIn_DayMet,file=paste0(data_dir,paste0(UnitName,'.DayMetSSN.RDS')))
+  saveRDS(UnitIn_DayMet,file=here('DayMetSSN',paste0(UnitName,'.DayMetSSN.RDS')))
 }
 #   ##Repeat for prediction frames
 #   PredFiles<-list.files(paste('/Volumes/Cline_USGS/DayMet',UnitName,'PredsBy1000',sep='/'))

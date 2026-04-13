@@ -20,10 +20,6 @@ library(doParallel)
 library(foreach)
 library(lme4)
 
-data_dir <- '../Annual_NorWest_Data/'
-
-#data_dir <- '/Volumes/Cline_USGS/Annual_NorWest_Data/'
-
 # Function to standardize variables
 stand <- function(x) { (x-mean(x))/(2*sd(x))}
 
@@ -55,11 +51,11 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   u<-8
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
 
-  UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('preds'))
+  UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('preds'))
   ssn_create_distmat(UnitIn,predpts="preds",overwrite=TRUE,among_predpts=TRUE)
-  
-  UnitIn<-readRDS(paste0(data_dir,paste0('DayMetSSN/',UnitName,'.DayMetSSN.RDS')))
-  UnitIn$path <- paste0(data_dir,paste0('Regions/',UnitName,'.ssn'))
+
+  UnitIn<-readRDS(here('DayMetSSN',paste0(UnitName,'.DayMetSSN.RDS')))
+  UnitIn$path <- here('Regions',paste0(UnitName,'.ssn'))
   
   #Get dataframe
   unit_df <- ssn_get_data(UnitIn, "obs") %>% sf::st_drop_geometry()
@@ -149,8 +145,8 @@ Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeB
   BestMod<-unit.tu.td.eu#switch(which.min(AICcomp),unit.tu,unit.td,unit.tu.eu,unit.td.eu)
   #BestMod <- update(BestMod[[1]],EstMeth='ML')
   
-  saveRDS(BestMod,paste0(data_dir,'Regions/',paste0('BestModel_',UnitName,'.RDS')))
-  save(list=ls(),file=paste0(data_dir,'Regions/',paste0('Workspace_',UnitName,'.Rdata')))
+  saveRDS(BestMod,here('Regions',paste0('BestModel_',UnitName,'.RDS')))
+  save(list=ls(),file=here('Regions',paste0('Workspace_',UnitName,'.Rdata')))
   
   BestMod_rdf <- loocv(BestMod)
   # Torgegram of residuals to be added later

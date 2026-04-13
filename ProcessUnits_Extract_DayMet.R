@@ -19,7 +19,6 @@ library(daymetr)
 library(foreach)
 library(doParallel)
 
-data_dir <- '/Volumes/Cline_USGS/Annual_NorWest_Data/'
 # Function to standardize variables
 stand <- function(x) { (x-mean(x))/(2*sd(x))}
 
@@ -120,7 +119,7 @@ for(u in c(1)){ #1,2,3,NOT4,5,6,7
     }
 
   }else{
-    UnitIn <- ssn_import(paste0(data_dir,'Regions/',Units[u]),predpts=c('preds'))
+    UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('preds'))
 
     if(!file.exists(here('Regions',Units[u],'distance'))){
       ssn_create_distmat(UnitIn,predpts="preds",overwrite=TRUE,among_predpts=TRUE)
