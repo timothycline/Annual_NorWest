@@ -3,7 +3,7 @@
 #SBATCH --partition=priority
 #SBATCH --array=1-8
 #SBATCH --cpus-per-task=12
-#SBATCH --account=priority-Cline
+#SBATCH --account=priority-timothycline
 #SBATCH --mem=32G
 #SBATCH --time=0-12:0:00
 #SBATCH --output=ExtractDayMet-%a-%j.out
