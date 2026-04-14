@@ -92,38 +92,17 @@ for(u in c(1)){ #1,2,3,NOT4,5,6,7
     UnitIn <- ssn_import_predpts(UnitIn,'pred_se')
     UnitIn <- ssn_import_predpts(UnitIn,'pred_we')
 
-    if(!file.exists(here('Regions',Units[u],'distance'))){
-      ssn_create_distmat(UnitIn,predpts="pred_ne",overwrite=TRUE,among_predpts=TRUE)
-      ssn_create_distmat(UnitIn,predpts="pred_se",overwrite=TRUE,among_predpts=TRUE)
-      ssn_create_distmat(UnitIn,predpts="pred_we",overwrite=TRUE,among_predpts=TRUE)
-    }
-
   }else if(Units[u]=='SnakeBear.ssn'){
     UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('prednorth'))
     UnitIn <- ssn_import_predpts(UnitIn,'predsouth')
-
-    if(!file.exists(here('Regions',Units[u],'distance'))){
-      ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
-      ssn_create_distmat(UnitIn,predpts="predsouth",overwrite=TRUE,among_predpts=TRUE)
-    }
 
   }else if(Units[u]=='Spokoot.ssn'){
     UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('prednorth'))
     UnitIn <- ssn_import_predpts(UnitIn,'predse')
     UnitIn <- ssn_import_predpts(UnitIn,'predsw')
 
-    if(!file.exists(here('Regions',Units[u],'distance'))){
-      ssn_create_distmat(UnitIn,predpts="prednorth",overwrite=TRUE,among_predpts=TRUE)
-      ssn_create_distmat(UnitIn,predpts="predse",overwrite=TRUE,among_predpts=TRUE)
-      ssn_create_distmat(UnitIn,predpts="predsw",overwrite=TRUE,among_predpts=TRUE)
-    }
-
   }else{
     UnitIn <- ssn_import(here('Regions',Units[u]),predpts=c('preds'))
-
-    if(!file.exists(here('Regions',Units[u],'distance'))){
-      ssn_create_distmat(UnitIn,predpts="preds",overwrite=TRUE,among_predpts=TRUE)
-    }
 
   }
   
