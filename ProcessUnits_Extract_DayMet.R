@@ -83,8 +83,11 @@ GetDayMet <<- function(Lat,Lon,ID_1KM){
 
 Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeBear.ssn','Spokoot.ssn','UpMissMarias.ssn','UpYellBighorn.ssn')
 
-for(u in c(1)){ #1,2,3,NOT4,5,6,7
-  u<-8
+# Accept unit number from command line (e.g. Rscript ... 8), else default to 8
+args <- commandArgs(trailingOnly=TRUE)
+u <- if(length(args)>0) as.integer(args[1]) else 8
+
+{
   UnitName <- substr(Units[u],1,nchar(Units[u])-4)
   
   if(Units[u]=='Midsnake.ssn'){
