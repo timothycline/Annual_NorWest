@@ -165,7 +165,7 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   
   #GI<-GroupIndices[1:2]
   #lapply(GroupIndices,FUN=function(x){
-  for(i in 94:nGroups){
+  for(i in 1:nGroups){
     x <- GroupIndices[[i]]
     
     # DayMetUnit <- mclapply(xL,FUN=function(y,LatLons=LatLons_Pred){
