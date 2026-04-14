@@ -15,7 +15,10 @@
 required_packages <- c('here','SSN2','dplyr','tidyr','doParallel','foreach','lme4')
 missing <- required_packages[!sapply(required_packages, requireNamespace, quietly=TRUE)]
 if(length(missing) > 0){
-  install.packages(missing, repos='https://cloud.r-project.org')
+  user_lib <- path.expand("~/R/library")
+  dir.create(user_lib, recursive=TRUE, showWarnings=FALSE)
+  .libPaths(c(user_lib, .libPaths()))
+  install.packages(missing, repos="https://cloud.r-project.org", lib=user_lib)
 }
 
 # Load the SSN library of functions
