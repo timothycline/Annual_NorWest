@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --account=priority-timothycline
 #SBATCH --mem=8G
-#SBATCH --time=0-1:0:00
+#SBATCH --time=0-4:0:00
 #SBATCH --output=InstallPackages-%j.out
 #SBATCH --error=InstallPackages-%j.err
 #SBATCH --mail-type=ALL

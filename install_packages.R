@@ -9,12 +9,22 @@ if(length(locks) > 0){
   unlink(locks, recursive=TRUE)
 }
 
-required_packages <- c('here','SSN2','dplyr','tidyr','daymetr','foreach','doParallel','lme4','sf','terra','spmodel')
-missing <- required_packages[!sapply(required_packages, requireNamespace, quietly=TRUE)]
+required_packages <- c('here','sf','terra','spmodel','SSN2',
+                       'dplyr','tidyr','daymetr','foreach','doParallel','lme4')
 
-if(length(missing) > 0){
-  message("Installing: ", paste(missing, collapse=", "))
-  install.packages(missing, repos="https://cloud.r-project.org", lib=user_lib)
-} else {
-  message("All packages already installed.")
+for(pkg in required_packages){
+  if(!requireNamespace(pkg, quietly=TRUE)){
+    message(Sys.time(), " -- Installing: ", pkg)
+    tryCatch(
+      install.packages(pkg, repos="https://cloud.r-project.org", lib=user_lib),
+      error = function(e) message("ERROR installing ", pkg, ": ", e$message)
+    )
+    if(requireNamespace(pkg, quietly=TRUE)){
+      message(Sys.time(), " -- OK: ", pkg)
+    } else {
+      message(Sys.time(), " -- FAILED: ", pkg)
+    }
+  } else {
+    message(Sys.time(), " -- Already installed: ", pkg)
+  }
 }
