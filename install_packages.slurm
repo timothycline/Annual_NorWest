@@ -16,6 +16,7 @@ echo "Hello from $(hostname -s)"
 
 module load R/4.4.2-gfbf-2024a
 module load GDAL/3.10.0-foss-2024a
+module load CMake/3.29.3-GCCcore-13.3.0
 
 Rscript install_packages.R
 
