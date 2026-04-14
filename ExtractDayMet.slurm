@@ -9,8 +9,7 @@
 #SBATCH --mail-user=timothy.cline2@montana.edu
 #SBATCH -o ExtractDayMet_%a.out
 
-# Load modules - update these to match Tempest module names
-module load R
-module load gdal
+module load R/4.4.2-gfbf-2024a
+module load GDAL/3.10.0-foss-2024a
 
 srun Rscript ProcessUnits_Extract_DayMet.R ${SLURM_ARRAY_TASK_ID}
