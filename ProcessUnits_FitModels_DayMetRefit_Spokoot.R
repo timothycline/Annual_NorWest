@@ -11,6 +11,13 @@
 # Microsoft OpenR is a pre-compiled version of this, though sometimes wonky. 
 
 
+# Install any missing packages
+required_packages <- c('here','SSN2','dplyr','tidyr','doParallel','foreach','lme4')
+missing <- required_packages[!sapply(required_packages, requireNamespace, quietly=TRUE)]
+if(length(missing) > 0){
+  install.packages(missing, repos='https://cloud.r-project.org')
+}
+
 # Load the SSN library of functions
 library(here)
 library(SSN2)
