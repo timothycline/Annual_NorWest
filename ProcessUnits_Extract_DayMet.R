@@ -163,11 +163,9 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   obs_rds_path <- here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS'))
 
   run_obs_parallel <- function(latlons, start_yr, end_yr){
-    cl <- makeCluster(12)
+    cl <- makeForkCluster(12)
     registerDoParallel(cl)
-    result <- foreach(x=seq_len(nrow(latlons)),
-                      .packages=c('dplyr','daymetr','tidyr'),
-                      .export=c('GetDayMet')) %dopar% {
+    result <- foreach(x=seq_len(nrow(latlons))) %dopar% {
       GetDayMet(Lon=latlons$Lon[x], Lat=latlons$Lat[x], ID_1KM=latlons$ID_1KM[x],
                 start_year=start_yr, end_year=end_yr)
     } %>% bind_rows()
@@ -255,10 +253,10 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
     # },mc.cores=4) %>% bind_rows()
 
     #Parallel run daymet extractions
-    cl <- makeCluster(12)
+    cl <- makeForkCluster(12)
     registerDoParallel(cl)
 
-    DayMetNew <- foreach(y=x, .packages=c('dplyr','daymetr','tidyr'), .export=c('GetDayMet')) %dopar% {
+    DayMetNew <- foreach(y=x) %dopar% {
       otp <- tryCatch({GetDayMet(Lon=LatLons_Pred$Lon[y], Lat=LatLons_Pred$Lat[y],
                                   ID_1KM=LatLons_Pred$ID_1KM[y],
                                   start_year=chunk_start, end_year=end_year)})
