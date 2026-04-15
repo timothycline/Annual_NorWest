@@ -136,7 +136,14 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   obs_sf <- ssn_get_data(UnitIn, "obs")
   obs_wgs84 <- sf::st_transform(obs_sf, crs = 4326)
   obs_coords <- sf::st_coordinates(obs_wgs84)
-  id_col_obs <- if("ID_1KM" %in% names(obs_sf)) obs_sf$ID_1KM else obs_sf$OBSPREDID
+  id_candidates <- c("ID_1KM","OBSPRED_ID","OBSPREDID","OSPREDID","locID","pid")
+  id_found_obs  <- id_candidates[id_candidates %in% names(obs_sf)][1]
+  if(is.na(id_found_obs)){
+    message("WARNING: no ID column found in obs. Available columns: ", paste(names(obs_sf), collapse=", "))
+    id_col_obs <- seq_len(nrow(obs_sf))
+  } else {
+    id_col_obs <- obs_sf[[id_found_obs]]
+  }
   LatLons_Obs <- data.frame(
     ID_1KM = id_col_obs,
     Lat    = obs_coords[, "Y"],
@@ -182,7 +189,13 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   pred_sf <- ssn_get_data(UnitIn, "preds")
   pred_wgs84 <- sf::st_transform(pred_sf, crs = 4326)
   pred_coords <- sf::st_coordinates(pred_wgs84)
-  id_col_pred <- if("ID_1KM" %in% names(pred_sf)) pred_sf$ID_1KM else pred_sf$OBSPREDID
+  id_found_pred <- id_candidates[id_candidates %in% names(pred_sf)][1]
+  if(is.na(id_found_pred)){
+    message("WARNING: no ID column found in preds. Available columns: ", paste(names(pred_sf), collapse=", "))
+    id_col_pred <- seq_len(nrow(pred_sf))
+  } else {
+    id_col_pred <- pred_sf[[id_found_pred]]
+  }
   LatLons_Pred <- data.frame(
     ID_1KM = id_col_pred,
     Lat    = pred_coords[, "Y"],
