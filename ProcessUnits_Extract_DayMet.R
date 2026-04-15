@@ -152,6 +152,7 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   # }) %>% bind_rows()
   
   end_year     <- as.integer(format(Sys.Date(), '%Y')) - 1
+  dir.create(here('Regions','DayMet',UnitName,'PredsBy1000'), recursive=TRUE, showWarnings=FALSE)
   obs_rds_path <- here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS'))
 
   if(!file.exists(obs_rds_path)){
