@@ -70,16 +70,27 @@ AugDayMet <- function(Lat,Lon,ID_1KM){
   return(AugTemp)
 }
 
-GetDayMet <<- function(Lat, Lon, ID_1KM, start_year=1980, end_year=as.integer(format(Sys.Date(),'%Y'))-1){
-  df1 <- daymetr::download_daymet(site='DayMet', lat=Lat, lon=Lon,
-                                   start=start_year, end=end_year,
-                                   internal=T, simplify=T) %>%
-    mutate(date=as.Date(paste(year,yday,sep='-'), '%Y-%j')) %>%
-    mutate(month=format(date,'%m')) %>%
-    select(year,yday,month,measurement,value) %>%
-    pivot_wider(names_from=measurement, values_from=value)
-  df1$ID_1KM <- ID_1KM
-  return(df1)
+GetDayMet <<- function(Lat, Lon, ID_1KM, start_year=1980, end_year=as.integer(format(Sys.Date(),'%Y'))-1, max_tries=5){
+  for(attempt in seq_len(max_tries)){
+    result <- tryCatch({
+      df1 <- daymetr::download_daymet(site='DayMet', lat=Lat, lon=Lon,
+                                       start=start_year, end=end_year,
+                                       internal=T, simplify=T) %>%
+        mutate(date=as.Date(paste(year,yday,sep='-'), '%Y-%j')) %>%
+        mutate(month=format(date,'%m')) %>%
+        select(year,yday,month,measurement,value) %>%
+        pivot_wider(names_from=measurement, values_from=value)
+      df1$ID_1KM <- ID_1KM
+      df1
+    }, error = function(e) {
+      message("Attempt ", attempt, "/", max_tries, " failed for ID_1KM=", ID_1KM, ": ", conditionMessage(e))
+      NULL
+    })
+    if(!is.null(result)) return(result)
+    if(attempt < max_tries) Sys.sleep(runif(1, 5, 15) * attempt)  # backoff with jitter
+  }
+  warning("All ", max_tries, " attempts failed for ID_1KM=", ID_1KM, " - returning empty data frame")
+  data.frame()
 }
 
 # Returns list(start_year, needs_update) based on what's already in an existing data frame.
