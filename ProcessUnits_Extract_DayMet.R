@@ -162,12 +162,22 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   dir.create(here('Regions','DayMet',UnitName,'PredsBy1000'), recursive=TRUE, showWarnings=FALSE)
   obs_rds_path <- here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS'))
 
+  run_obs_parallel <- function(latlons, start_yr, end_yr){
+    cl <- makeCluster(12)
+    registerDoParallel(cl)
+    result <- foreach(x=seq_len(nrow(latlons)),
+                      .packages=c('dplyr','daymetr','tidyr'),
+                      .export=c('GetDayMet')) %dopar% {
+      GetDayMet(Lon=latlons$Lon[x], Lat=latlons$Lat[x], ID_1KM=latlons$ID_1KM[x],
+                start_year=start_yr, end_year=end_yr)
+    } %>% bind_rows()
+    stopCluster(cl)
+    result
+  }
+
   if(!file.exists(obs_rds_path)){
     message("Downloading obs DayMet 1980-", end_year)
-    DayMet_Obs <- lapply(1:nrow(LatLons_Obs), FUN=function(x){
-      GetDayMet(Lon=LatLons_Obs$Lon[x], Lat=LatLons_Obs$Lat[x], ID_1KM=LatLons_Obs$ID_1KM[x],
-                start_year=1980, end_year=end_year)
-    }) %>% bind_rows()
+    DayMet_Obs <- run_obs_parallel(LatLons_Obs, 1980, end_year)
     saveRDS(DayMet_Obs, file=obs_rds_path)
   } else {
     existing_obs <- readRDS(obs_rds_path)
@@ -176,10 +186,7 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
       message("Obs data current through ", end_year, " - skipping")
     } else {
       message("Updating obs DayMet ", ur$start, "-", end_year)
-      new_obs <- lapply(1:nrow(LatLons_Obs), FUN=function(x){
-        GetDayMet(Lon=LatLons_Obs$Lon[x], Lat=LatLons_Obs$Lat[x], ID_1KM=LatLons_Obs$ID_1KM[x],
-                  start_year=ur$start, end_year=end_year)
-      }) %>% bind_rows()
+      new_obs <- run_obs_parallel(LatLons_Obs, ur$start, end_year)
       DayMet_Obs <- bind_rows(existing_obs[existing_obs$year < ur$start, ], new_obs)
       saveRDS(DayMet_Obs, file=obs_rds_path)
     }
