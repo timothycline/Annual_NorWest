@@ -70,18 +70,27 @@ AugDayMet <- function(Lat,Lon,ID_1KM){
   return(AugTemp)
 }
 
-GetDayMet <<- function(Lat,Lon,ID_1KM){
-  
-  #Download All Daymet measurements for this site
-  df1 <- daymetr::download_daymet(site = 'DayMet', lat=Lat, lon=Lon, start=1980, end=2020, internal=T, simplify = T) %>%
+GetDayMet <<- function(Lat, Lon, ID_1KM, start_year=1980, end_year=as.integer(format(Sys.Date(),'%Y'))-1){
+  df1 <- daymetr::download_daymet(site='DayMet', lat=Lat, lon=Lon,
+                                   start=start_year, end=end_year,
+                                   internal=T, simplify=T) %>%
     mutate(date=as.Date(paste(year,yday,sep='-'), '%Y-%j')) %>%
-    mutate(month=format(date,'%m')) %>% 
-    select(year,yday,month,measurement,value) %>% 
+    mutate(month=format(date,'%m')) %>%
+    select(year,yday,month,measurement,value) %>%
     pivot_wider(names_from=measurement, values_from=value)
-  
-  #Add id column to link to DayMet
   df1$ID_1KM <- ID_1KM
   return(df1)
+}
+
+# Returns list(start_year, needs_update) based on what's already in an existing data frame.
+# Checks max year AND max DOY so partial-year downloads are detected and re-fetched.
+daymet_start_year <- function(existing, end_year){
+  max_yr  <- max(existing$year)
+  max_doy <- max(existing$yday[existing$year == max_yr])
+  is_leap <- (max_yr %% 4 == 0) & (max_yr %% 100 != 0 | max_yr %% 400 == 0)
+  last_doy <- ifelse(is_leap, 366, 365)
+  start <- if(max_doy >= last_doy) max_yr + 1 else max_yr
+  list(start=start, needs_update=start <= end_year)
 }
 
 Units <- c('Clearwater.ssn','Midsnake.ssn','MissouriHW.ssn','Salmon.ssn','SnakeBear.ssn','Spokoot.ssn','UpMissMarias.ssn','UpYellBighorn.ssn')
@@ -130,15 +139,31 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   #   return(otp)  
   # }) %>% bind_rows()
   
-  DayMet_Obs<-lapply(1:nrow(LatLons_Obs),FUN=function(x){
-    #x <- 1
-    otp<-GetDayMet(Lon=LatLons_Obs$Lon[x],Lat=LatLons_Obs$Lat[x],ID_1KM = LatLons_Obs$ID_1KM[x])
-    return(otp)  
-  }) %>% bind_rows()
-  
-  #save(DayMet_Obs,file=paste0('Regions/DayMet/DayMet_Obs',UnitName,'.Rdata'))
-  #saveRDS(DayMet_Obs,file=paste0('/Volumes/Cline_USGS/DayMet/',UnitName,'/',paste0(UnitName,'.Obs','.RDS')))
-  saveRDS(DayMet_Obs,file=here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS')))
+  end_year     <- as.integer(format(Sys.Date(), '%Y')) - 1
+  obs_rds_path <- here('Regions','DayMet',UnitName,paste0(UnitName,'.Obs','.RDS'))
+
+  if(!file.exists(obs_rds_path)){
+    message("Downloading obs DayMet 1980-", end_year)
+    DayMet_Obs <- lapply(1:nrow(LatLons_Obs), FUN=function(x){
+      GetDayMet(Lon=LatLons_Obs$Lon[x], Lat=LatLons_Obs$Lat[x], ID_1KM=LatLons_Obs$ID_1KM[x],
+                start_year=1980, end_year=end_year)
+    }) %>% bind_rows()
+    saveRDS(DayMet_Obs, file=obs_rds_path)
+  } else {
+    existing_obs <- readRDS(obs_rds_path)
+    ur <- daymet_start_year(existing_obs, end_year)
+    if(!ur$needs_update){
+      message("Obs data current through ", end_year, " - skipping")
+    } else {
+      message("Updating obs DayMet ", ur$start, "-", end_year)
+      new_obs <- lapply(1:nrow(LatLons_Obs), FUN=function(x){
+        GetDayMet(Lon=LatLons_Obs$Lon[x], Lat=LatLons_Obs$Lat[x], ID_1KM=LatLons_Obs$ID_1KM[x],
+                  start_year=ur$start, end_year=end_year)
+      }) %>% bind_rows()
+      DayMet_Obs <- bind_rows(existing_obs[existing_obs$year < ur$start, ], new_obs)
+      saveRDS(DayMet_Obs, file=obs_rds_path)
+    }
+  }
   
   #Pull DayMet predictions for all prediction sites
   pred_sf <- ssn_get_data(UnitIn, "preds")
@@ -170,27 +195,50 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   #lapply(GroupIndices,FUN=function(x){
   for(i in 1:nGroups){
     x <- GroupIndices[[i]]
-    
+    out_path <- here('Regions','DayMet',UnitName,'PredsBy1000',paste(UnitName,x[1],'RDS',sep='.'))
+
+    # Determine what years to download for this chunk
+    if(file.exists(out_path)){
+      existing_chunk <- readRDS(out_path)
+      ur <- daymet_start_year(existing_chunk, end_year)
+      if(!ur$needs_update){
+        message("Skipping pred group ", i, "/", nGroups, " - current through ", end_year)
+        next
+      }
+      chunk_start <- ur$start
+      message("Updating pred group ", i, "/", nGroups, ": years ", chunk_start, "-", end_year)
+    } else {
+      chunk_start <- 1980
+      existing_chunk <- NULL
+      message("Downloading pred group ", i, "/", nGroups, ": years 1980-", end_year)
+    }
+
     # DayMetUnit <- mclapply(xL,FUN=function(y,LatLons=LatLons_Pred){
     #   #y <- xL[[1]]
     #   #LatLons <- LatLons_Pred
     #   otp<-tryCatch({GetDayMet(Lon=LatLons$Lon[y],Lat=LatLons$Lat[y],ID_1KM = LatLons$ID_1KM[y])})
-    #   return(otp)  
+    #   return(otp)
     # },mc.cores=4) %>% bind_rows()
-    
+
     #Parallel run daymet extractions
     cl <- makeCluster(12)
     registerDoParallel(cl)
-    
-    DayMetUnit <- foreach(y=x,.packages=c('dplyr','daymetr','tidyr')) %dopar% {
-      #y <- xL[[1]]
-      otp<-tryCatch({GetDayMet(Lon=LatLons_Pred$Lon[y],Lat=LatLons_Pred$Lat[y],ID_1KM = LatLons_Pred$ID_1KM[y])})
+
+    DayMetNew <- foreach(y=x, .packages=c('dplyr','daymetr','tidyr')) %dopar% {
+      otp <- tryCatch({GetDayMet(Lon=LatLons_Pred$Lon[y], Lat=LatLons_Pred$Lat[y],
+                                  ID_1KM=LatLons_Pred$ID_1KM[y],
+                                  start_year=chunk_start, end_year=end_year)})
       return(otp)
     } %>% bind_rows()
-    
+
     stopCluster(cl)
-    
-    saveRDS(DayMetUnit,file=here('Regions','DayMet',UnitName,'PredsBy1000',paste(UnitName,x[1],'RDS',sep='.')))
+
+    if(!is.null(existing_chunk)){
+      DayMetUnit <- bind_rows(existing_chunk[existing_chunk$year < chunk_start, ], DayMetNew)
+    } else {
+      DayMetUnit <- DayMetNew
+    }
+    saveRDS(DayMetUnit, file=out_path)
     print(i)
     print(round(i/nGroups,2))
   }
