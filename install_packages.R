@@ -9,11 +9,15 @@ if(length(locks) > 0){
   unlink(locks, recursive=TRUE)
 }
 
-required_packages <- c('here','sf','terra','spmodel','SSN2',
+required_packages <- c('Rcpp','here','sf','terra','spmodel','SSN2',
                        'dplyr','tidyr','daymetr','foreach','doParallel','lme4')
 
+# Packages that must be force-updated to meet minimum version requirements
+force_update <- c('Rcpp')
+
 for(pkg in required_packages){
-  if(!requireNamespace(pkg, quietly=TRUE)){
+  needs_install <- !requireNamespace(pkg, quietly=TRUE) || pkg %in% force_update
+  if(needs_install){
     message(Sys.time(), " -- Installing: ", pkg)
     tryCatch(
       install.packages(pkg, repos="https://cloud.r-project.org", lib=user_lib),
