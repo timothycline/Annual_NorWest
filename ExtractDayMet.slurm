@@ -17,6 +17,7 @@ echo "Hello from $(hostname -s)"
 
 module load R/4.4.2-gfbf-2024a
 module load GDAL/3.10.0-foss-2024a
+module load UDUNITS/2.2.28-GCCcore-13.3.0
 
 Rscript ProcessUnits_Extract_DayMet.R ${SLURM_ARRAY_TASK_ID}
 
