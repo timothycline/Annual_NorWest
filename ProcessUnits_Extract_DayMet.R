@@ -125,8 +125,9 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   obs_sf <- ssn_get_data(UnitIn, "obs")
   obs_wgs84 <- sf::st_transform(obs_sf, crs = 4326)
   obs_coords <- sf::st_coordinates(obs_wgs84)
+  id_col_obs <- if("ID_1KM" %in% names(obs_sf)) obs_sf$ID_1KM else obs_sf$OBSPREDID
   LatLons_Obs <- data.frame(
-    ID_1KM = obs_sf$ID_1KM,
+    ID_1KM = id_col_obs,
     Lat    = obs_coords[, "Y"],
     Lon    = obs_coords[, "X"]
   )
@@ -169,8 +170,9 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
   pred_sf <- ssn_get_data(UnitIn, "preds")
   pred_wgs84 <- sf::st_transform(pred_sf, crs = 4326)
   pred_coords <- sf::st_coordinates(pred_wgs84)
+  id_col_pred <- if("ID_1KM" %in% names(pred_sf)) pred_sf$ID_1KM else pred_sf$OBSPREDID
   LatLons_Pred <- data.frame(
-    ID_1KM = pred_sf$ID_1KM,
+    ID_1KM = id_col_pred,
     Lat    = pred_coords[, "Y"],
     Lon    = pred_coords[, "X"]
   )
