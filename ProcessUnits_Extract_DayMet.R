@@ -251,7 +251,7 @@ u <- if(length(args)>0) as.integer(args[1]) else 8
     cl <- makeCluster(12)
     registerDoParallel(cl)
 
-    DayMetNew <- foreach(y=x, .packages=c('dplyr','daymetr','tidyr')) %dopar% {
+    DayMetNew <- foreach(y=x, .packages=c('dplyr','daymetr','tidyr'), .export=c('GetDayMet')) %dopar% {
       otp <- tryCatch({GetDayMet(Lon=LatLons_Pred$Lon[y], Lat=LatLons_Pred$Lat[y],
                                   ID_1KM=LatLons_Pred$ID_1KM[y],
                                   start_year=chunk_start, end_year=end_year)})
